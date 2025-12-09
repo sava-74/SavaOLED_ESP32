@@ -1,0 +1,21 @@
+# SavaOLED_ESP32 Keywords for Arduino IDE Syntax Highlighting
+
+#######################################
+# Class Name (KEYWORD1)
+#######################################
+SavaOLED_ESP32	KEYWORD1
+
+#######################################
+# Public Methods (KEYWORD2)
+#######################################
+init			KEYWORD2
+dot				KEYWORD2
+display			KEYWORD2
+clearBuffer		KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+OLED_WIDTH		LITERAL1
+OLED_HEIGHT		LITERAL1
+OLED_BUFFER_SIZE	LITERAL1
