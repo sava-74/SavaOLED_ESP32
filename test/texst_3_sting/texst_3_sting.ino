@@ -1,8 +1,9 @@
 #include "SavaOLED_ESP32.h"
-#include "Fonts\SavaFont_Proportional_5x8.h"
-#include "Fonts\SavaFont_Proportional_Num_8px.h"
+///#include "Fonts\SavaFont_MyFont_Proportional_16px.h"
+#include "Fonts\SavaFont_ilya_Pro_8px.h"
+#include "Fonts\SavaFont_cuper_Pro_16px.h"
 // Старые шрифты временно ОТКЛЮЧАЕМ!
-// #include "Fonts/SavaFont_Arialdb_Latin_33x36.h"  SavaFont_Proportional_Num_8px
+// #include "Fonts/SavaFont_Arialdb_Latin_33x36.h"  SavaFont_Proportional_Num_8px SavaFont_MyFont_Num_32px
 
 
 #define SCREEN_WIDTH 128
@@ -23,40 +24,42 @@ void setup() {
 }
 
 void loop() {
-    if (millis() >= tim + 5000) {
+    if (millis() >= tim + 15000) {
         flag = !flag;
         tim = millis();
     }
 
     oled.clearBuffer();
 
-    oled.rect(0, 0, 127, 11, INV_AUTO, FILL);
+    oled.rect(0, 0, 127, 20, INV_AUTO, FILL);
 
-    /* Тест 1: Скроллинг с русским и английским*/
+     //Тест 1: Скроллинг с русским и английским
     oled.setCursor(10, 2, StrScroll,117);
-    oled.setScroll(true); // Включаем скролл
+    oled.setScroll(flag); // Включаем скролл
     oled.setDrawMode(INV_AUTO);
-    oled.setCharSpacing(4); // Интервал 2 пикселя
-    oled.setFont(SavaFont_Proportional_5x8);
+    oled.setCharSpacing(1); // Интервал 2 пикселя
+    oled.setFont(SavaFont_ilya_Pro_8px);
     
     // Внимание: Текст должен быть в UTF-8 (обычно это дефолт в Arduino IDE)
     oled.addPrint("ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮйцукенгшщзхъфывапролджэячсмитьбю.!нгш"); 
     oled.drawPrint();
 
     // Тест 2: Статичный текст по центру
-    oled.setCursor(0, 30, StrCenter); // Координата X=64 (центр экрана 128/2)
-    //oled.setScroll(false);
+    oled.setCursor(0, 30, StrScroll); // Координата X=64 (центр экрана 128/2)
+    oled.setScroll(!flag);
     oled.setCharSpacing(1);
     oled.setDrawMode(ADD_UP);
-    oled.addPrint("Йёу! Привет мир!");
+    oled.addPrint("Привет мир! Это Я Мальчик Илья");
     oled.drawPrint();
 
     // Тест 3: Плотный текст (интервал 1)
-    oled.setCursor(0, 50, StrLeft);
-    oled.setCharSpacing(2);
-    oled.setFont(SavaFont_Proportional_Num_8px);
+    oled.setCursor(0, 50, StrCenter);
+   // oled.setScroll(false);
+    oled.setCharSpacing(1);
+    oled.setDrawMode(INV_AUTO);
+    oled.setFont(SavaFont_cuper_Pro_16px);
     oled.addPrint(":-");
-    oled.addPrint(millis());
+    oled.addPrint(millis(),8);
     oled.drawPrint();
 
     // ЕДИНСТВЕННЫЙ display() в конце!
