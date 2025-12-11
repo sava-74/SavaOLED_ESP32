@@ -319,7 +319,6 @@ void SavaOLED_ESP32::addPrint(const String &s) { addPrint(s.c_str()); }
 //****************************************************************************************
 
 void SavaOLED_ESP32::drawPrint() {
-    // Стало:
     if (_segmentCount == 0 && !_scrollEnabled) return;
 
     // --- Шаг 1: Перерисовка во временный буфер (только если текст изменился) ---
@@ -451,13 +450,12 @@ void SavaOLED_ESP32::drawPrint() {
             uint8_t y_page_start = _cursorY / 8;
             uint8_t y_offset = _cursorY % 8;
             
-            // --- ИСПРАВЛЕНО: Простой цикл по всем страницам отрисованной строки
+            // ---  Простой цикл по всем страницам отрисованной строки
             for (uint8_t p = 0; p < _lineBufferHeightPages; p++) {
                 uint32_t source_idx = (uint32_t)source_x + (uint32_t)p * _lineBufferWidth;
                 
                 uint8_t data_byte = _lineBuffer[source_idx];
 
-                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
                 // Нельзя пропускать нули в режиме REPLACE, иначе фон не очистится!
                 // Пропускаем только если это ADD_UP или INV_AUTO и байт пустой.
                 if (data_byte == 0 && _drawMode != REPLACE) continue; 
@@ -507,6 +505,141 @@ void SavaOLED_ESP32::drawPrint() {
         }
     }
 }   
+
+void SavaOLED_ESP32::drawPrintVert() {
+    if (_segmentCount == 0) return;
+
+    int16_t current_x = _cursorX;
+    int16_t current_y = _cursorY;
+    const uint8_t pages_total = _height / 8;
+
+    for (uint8_t s = 0; s < _segmentCount; ++s) {
+        const auto& segment = _segments[s];
+        const Font* font = segment.font;
+        const char* text = segment.text;
+
+        if (!font || !text) continue;
+
+        uint8_t pages_per_char = (font->height + 7) / 8;
+
+        int i = 0;
+        while (text[i] != '\0') {
+            uint16_t char_code = (uint8_t)text[i];
+            if (char_code < 128) { 
+                i++; 
+            } else { 
+                char_code = utf8_to_cp1251((uint8_t)text[i], (uint8_t)text[i+1]); 
+                i += 2; 
+            }
+
+            uint16_t index = _getCharIndex(font, char_code);
+            if (index == 0xFFFF) continue;
+
+            const uint8_t* char_ptr = &font->data[font->offsets[index]];
+            uint8_t raw_width_cols = *char_ptr; // Ширина символа (кол-во байт по X)
+            const uint8_t* glyph_pixels = char_ptr + 1;
+
+            // --- BITWISE AUTOCROP (Побитовое сканирование) ---
+            
+            // 1. Собираем маску всех пикселей символа (сплющиваем все колонки в одну)
+            // Для шрифтов > 8px (2+ страницы) используем 32-битную маску
+            uint32_t unified_mask = 0;
+            
+            for (uint8_t col = 0; col < raw_width_cols; col++) {
+                for (uint8_t p = 0; p < pages_per_char; p++) {
+                    uint8_t byte = glyph_pixels[p * raw_width_cols + col];
+                    unified_mask |= ((uint32_t)byte << (p * 8));
+                }
+            }
+
+            // Если символ пустой (Пробел)
+            if (unified_mask == 0) {
+                // Сдвигаем на 1/3 от высоты шрифта (эмуляция пробела по вертикали)
+                current_y += (font->height / 3) + _charSpacing;
+                if (current_y >= _height) break;
+                continue;
+            }
+
+            // 2. Ищем первый установленный бит (сверху)
+            uint8_t shift_top = 0;
+            while ((unified_mask & 0x01) == 0) {
+                unified_mask >>= 1;
+                shift_top++;
+            }
+
+            // 3. Ищем последний установленный бит (снизу)
+            // unified_mask уже сдвинута, ищем оставшуюся высоту
+            uint8_t pixel_height = 0;
+            uint32_t temp_mask = unified_mask;
+            while (temp_mask != 0) {
+                temp_mask >>= 1;
+                pixel_height++;
+            }
+
+            // --- ОТРИСОВКА ---
+            uint8_t y_page_start = current_y / 8;
+            uint8_t y_bit_offset = current_y % 8;
+
+            for (uint8_t col = 0; col < raw_width_cols; col++) {
+                int16_t draw_x = current_x + col;
+                if (draw_x < 0 || draw_x >= _width) continue;
+
+                // Извлекаем полный вертикальный столбец символа в одну переменную
+                uint32_t col_data = 0;
+                for (uint8_t p = 0; p < pages_per_char; p++) {
+                    col_data |= ((uint32_t)glyph_pixels[p * raw_width_cols + col] << (p * 8));
+                }
+
+                // А. Обрезаем пустоту сверху (сдвигаем данные к нулю)
+                col_data >>= shift_top;
+                
+                // Б. Маскируем лишнее снизу (на всякий случай, хотя сдвиг уже убрал верх)
+                // (не обязательно, так как мы пишем только нужное кол-во бит, но для чистоты)
+                
+                // В. Сдвигаем на позицию отрисовки на экране
+                // Нам нужно записать pixel_height бит начиная с current_y
+                // Поскольку мы пишем в байты (страницы), нужно разбить данные обратно
+                
+                // Сдвигаем данные на фазу экрана (y_bit_offset)
+                // Используем 64 бита для буфера записи, чтобы не потерять хвост при сдвиге
+                uint64_t render_data = (uint64_t)col_data << y_bit_offset;
+                uint64_t render_mask = ((1ULL << pixel_height) - 1) << y_bit_offset;
+
+                for (uint8_t p = 0; p < sizeof(render_data); p++) { // p - это смещение в страницах от y_page_start
+                    uint8_t dest_page = y_page_start + p;
+                    if (dest_page >= pages_total) break;
+
+                    uint8_t data_byte = (uint8_t)(render_data & 0xFF);
+                    uint8_t mask_byte = (uint8_t)(render_mask & 0xFF);
+
+                    if (mask_byte != 0) {
+                        uint32_t idx = draw_x + dest_page * _width;
+                        if (_drawMode == REPLACE) 
+                            _buffer[idx] = (_buffer[idx] & ~mask_byte) | (data_byte & mask_byte);
+                        else if (_drawMode == ADD_UP) 
+                            _buffer[idx] |= (data_byte & mask_byte);
+                        else if (_drawMode == INV_AUTO) 
+                            _buffer[idx] ^= (data_byte & mask_byte);
+                    }
+
+                    render_data >>= 8;
+                    render_mask >>= 8;
+                    // Оптимизация: если маска кончилась, выходим
+                    if (render_mask == 0) break;
+                }
+            }
+
+            // 4. Сдвигаем курсор на реальную высоту + интервал
+            current_y += pixel_height + _charSpacing;
+            
+            if (current_y >= _height) break;
+        }
+    }
+}
+
+
+
+
 
 void SavaOLED_ESP32::display() { 
     if (_Buffer) { 
@@ -934,6 +1067,8 @@ uint16_t SavaOLED_ESP32::_getCharIndex(const Font* font, uint16_t char_code) {
 
     return 0xFFFF;
 }
+
+
 
 void SavaOLED_ESP32::_drawPixel(int16_t x, int16_t y, uint8_t mode) { // -- эта строку изменить
     if (x < 0 || x >= _width || y < 0 || y >= _height) {
