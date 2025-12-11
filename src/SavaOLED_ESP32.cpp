@@ -509,221 +509,38 @@ void SavaOLED_ESP32::drawPrint() {
     }
 }   
 
-/*void SavaOLED_ESP32::drawPrintVert() { /// это рабочий код ! я его вернул 
-    if (_segmentCount == 0 && !_scrollEnabled) return;
-
-    // 1. Очистка вертикального буфера
-    memset(_vertBuffer, 0, VERT_BUF_SIZE);
-    uint16_t current_buf_y = 0;
-    
-    // Максимальная ширина столбца (в страницах), которую мы поддерживаем в буфере (4 страницы = 32px)
-    const uint8_t max_buf_pages = 4; 
-
-    // --- ЭТАП 1: РЕНДЕРИНГ В БУФЕР (Сверху вниз, start Y = 0) ---
-    for (uint8_t s = 0; s < _segmentCount; ++s) {
-        const auto& segment = _segments[s];
-        const Font* font = segment.font;
-        const char* text = segment.text;
-        if (!font || !text) continue;
-
-        uint8_t pages_per_char = (font->height + 7) / 8;
-        if (pages_per_char > max_buf_pages) pages_per_char = max_buf_pages;
-
-        int i = 0;
-        while (text[i] != '\0') {
-            uint16_t char_code = (uint8_t)text[i];
-            if (char_code < 128) { i++; } 
-            else { char_code = utf8_to_cp1251((uint8_t)text[i], (uint8_t)text[i+1]); i += 2; }
-
-            uint16_t index = _getCharIndex(font, char_code);
-            if (index == 0xFFFF) continue;
-
-            const uint8_t* char_ptr = &font->data[font->offsets[index]];
-            uint8_t raw_size = *char_ptr;
-            const uint8_t* glyph_pixels = char_ptr + 1;
-
-            // Autocrop (Scan Forward)
-            uint8_t start_col = 0;
-            bool found = false;
-            for (; start_col < raw_size; start_col++) {
-                for (uint8_t p = 0; p < pages_per_char; p++) {
-                    if (glyph_pixels[p * raw_size + start_col] != 0) { found = true; break; }
-                }
-                if (found) break;
-            }
-
-            // Autocrop (Scan Backward)
-            uint8_t end_col = raw_size - 1;
-            if (found) {
-                found = false;
-                for (; end_col > start_col; end_col--) {
-                    for (uint8_t p = 0; p < pages_per_char; p++) {
-                        if (glyph_pixels[p * raw_size + end_col] != 0) { found = true; break; }
-                    }
-                    if (found) break;
-                }
-            } else {
-                // Пробел
-                current_buf_y += (raw_size > 4 ? raw_size / 3 : 4) + _charSpacing;
-                continue;
-            }
-
-            // Копируем полезные байты в _vertBuffer
-            // В буфере данные лежат линейно: [Y0_Page0] [Y0_Page1] .. [Y1_Page0] ..
-            for (uint8_t col = start_col; col <= end_col; col++) {
-                // Проверка переполнения буфера по высоте
-                if ((current_buf_y * max_buf_pages) >= VERT_BUF_SIZE) break;
-
-                for (uint8_t p = 0; p < pages_per_char; p++) {
-                    uint8_t val = glyph_pixels[p * raw_size + col];
-                    // Пишем в буфер. Адрес = (Y * Ширина_буфера_в_страницах) + Текущая_страница
-                    _vertBuffer[current_buf_y * max_buf_pages + p] = val;
-                }
-                current_buf_y++;
-            }
-            current_buf_y += _charSpacing;
-        }
-    }
-    
-    // Удаляем последний интервал
-    if (current_buf_y > 0) current_buf_y -= _charSpacing;
-    _vertBufferHeight = current_buf_y;
-
-    // --- ЭТАП 2: РАСЧЕТ КООРДИНАТ НА ЭКРАНЕ ---
-    int32_t screen_y_start = _cursorY;
-
-    // Логика скроллинга
-    if (_scrollEnabled && _cursorAlign == StrScroll) {
-        // Тайминг
-        unsigned long currentTime = millis();
-        uint16_t scroll_delay = 1000 / (_scrollSpeed * 10);
-        if (currentTime - _lastScrollTime > scroll_delay) { 
-            _lastScrollTime = currentTime; 
-            _scrollOffset++; 
-        }
-        
-        uint32_t loop_height = _vertBufferHeight + 30; // 30px пауза между повторами
-        uint32_t effective_offset = _scrollOffset % loop_height;
-        
-        // Смещаем текст вверх
-        screen_y_start -= effective_offset;
-    } 
-    // Логика выравнивания (если не скролл)
-    else {
-        if (_cursorAlign == StrCenter) {
-            screen_y_start = _cursorY - (_vertBufferHeight / 2);
-        } else if (_cursorAlign == StrRight) { // Используем как Bottom align
-            screen_y_start = _cursorY - _vertBufferHeight;
-        }
-    }
-
-    // --- ЭТАП 3: БЛИТТИНГ (Копирование из VertBuffer на Экран) ---
-    // Нам нужно скопировать весь _vertBuffer, накладывая его на экран начиная с screen_y_start
-    
-    // Цикл по Y буфера (от 0 до _vertBufferHeight)
-    // Для скроллинга (зацикливания) нужно рисовать дважды, если текст уехал вверх
-    
-    for (int pass = 0; pass < 2; pass++) { // Проход 2 нужен для "хвоста" при скроллинге
-        int32_t current_render_y = screen_y_start;
-        if (pass == 1) {
-            if (!_scrollEnabled) break;
-            current_render_y += (_vertBufferHeight + 30); // Рисуем копию снизу
-        }
-
-        for (uint16_t buf_y = 0; buf_y < _vertBufferHeight; buf_y++) {
-            int32_t abs_y = current_render_y + buf_y;
-
-            // Оптимизация: если строка за пределами экрана
-            if (abs_y >= _height) break; 
-            if (abs_y < -8) continue; // -8 потому что байт может торчать снизу
-
-            // Вычисляем координаты на экране
-            // abs_y может быть отрицательным (уехал вверх), но маски это учтут
-            
-            // X координата (столбец)
-            int16_t draw_x = _cursorX; // Тут можно добавить логику StrRight для X, если нужно
-
-            // Y привязка к страницам экрана
-            // Важно: abs_y может быть не кратен 8.
-            // Нам нужно взять байты из буфера и сдвинуть их.
-            
-            int16_t page_y = (abs_y >= 0) ? (abs_y / 8) : ((abs_y - 7) / 8);
-            uint8_t bit_shift = (abs_y >= 0) ? (abs_y % 8) : (8 + (abs_y % 8));
-            if (bit_shift == 8) bit_shift = 0;
-
-            for (uint8_t p = 0; p < max_buf_pages; p++) {
-                // Данные из вертикального буфера
-                uint8_t data = _vertBuffer[buf_y * max_buf_pages + p];
-                if (data == 0 && _drawMode != REPLACE) continue;
-
-                // Сдвиг и маски
-                uint8_t mask_top = data << bit_shift;
-                uint8_t mask_bottom = (bit_shift > 0) ? (data >> (8 - bit_shift)) : 0;
-                
-                uint8_t cover_top = 0xFF << bit_shift;
-                uint8_t cover_bottom = (bit_shift > 0) ? (0xFF >> (8 - bit_shift)) : 0;
-
-                // Запись Top Page
-                if (page_y >= 0 && page_y < (_height/8)) {
-                    uint32_t idx = (draw_x + p) + page_y * _width; // +p сдвигает колонки в ширину (толщина букв)
-                    // Проверка ширины экрана
-                    if ((draw_x + p) < _width) {
-                        if (_drawMode == REPLACE) _buffer[idx] = (_buffer[idx] & ~cover_top) | mask_top;
-                        else if (_drawMode == ADD_UP) _buffer[idx] |= mask_top;
-                        else if (_drawMode == INV_AUTO) _buffer[idx] ^= mask_top;
-                    }
-                }
-
-                // Запись Bottom Page
-                if (bit_shift > 0) {
-                    int16_t next_page = page_y + 1;
-                    if (next_page >= 0 && next_page < (_height/8)) {
-                        uint32_t idx = (draw_x + p) + next_page * _width;
-                        if ((draw_x + p) < _width) {
-                            if (_drawMode == REPLACE) _buffer[idx] = (_buffer[idx] & ~cover_bottom) | mask_bottom;
-                            else if (_drawMode == ADD_UP) _buffer[idx] |= mask_bottom;
-                            else if (_drawMode == INV_AUTO) _buffer[idx] ^= mask_bottom;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}*/
 
 void SavaOLED_ESP32::drawPrintVert() {
     if (_segmentCount == 0) return;
 
-    // Вспомогательная структура для хранения вычислений первого прохода
+    // --- ПРОХОД 1: ИЗМЕРЕНИЕ ВЫСОТЫ ТЕКСТА ---
     struct CharLayout {
         uint16_t index;
-        uint8_t raw_width;      // Ширина в байтах из файла
-        uint8_t skip_top;       // Сколько пустых строк пикселей сверху
-        uint8_t real_height;    // Реальная высота символа в пикселях
+        uint8_t raw_width;
+        uint8_t skip_top;
+        uint8_t real_height;
         bool is_space;
     };
-    
-    CharLayout layouts[128]; // Буфер метрик
+
+    CharLayout layouts[128];
     uint16_t layout_count = 0;
     uint16_t total_pixel_height = 0;
+    const uint8_t gap = 24; // Промежуток между повторами текста
 
-    // --- ПРОХОД 1: АНАЛИЗ И РАСЧЕТ ВЫСОТЫ (SCAN ROWS) ---
     for (uint8_t s = 0; s < _segmentCount; ++s) {
         const auto& segment = _segments[s];
         if (!segment.font || !segment.text) continue;
-
         const Font* font = segment.font;
-        uint8_t font_h_pixels = font->height; 
-        //uint8_t pages_per_char = (font_h_pixels + 7) / 8;
-
+        uint8_t font_h_pixels = font->height;
         int i = 0;
-        while (segment.text[i] != '\0') {
-            if (layout_count >= 128) break;
-
+        while (segment.text[i] != '\0' && layout_count < 128) {
             uint16_t char_code = (uint8_t)segment.text[i];
-            if (char_code < 128) { i++; } 
-            else { char_code = utf8_to_cp1251((uint8_t)segment.text[i], (uint8_t)segment.text[i+1]); i += 2; }
-
+            if (char_code < 128) {
+                i++;
+            } else {
+                char_code = utf8_to_cp1251((uint8_t)segment.text[i], (uint8_t)segment.text[i + 1]);
+                i += 2;
+            }
             uint16_t index = _getCharIndex(font, char_code);
             if (index == 0xFFFF) continue;
 
@@ -731,14 +548,13 @@ void SavaOLED_ESP32::drawPrintVert() {
             uint8_t raw_width = *char_ptr;
             const uint8_t* pixels = char_ptr + 1;
 
-            // 1.1 СКАНИРОВАНИЕ СВЕРХУ (Поиск пустых строк пикселей)
+            // Пропуск пустых строк сверху
             uint8_t empty_top = 0;
             for (int row = 0; row < font_h_pixels; row++) {
                 bool row_is_empty = true;
                 for (int col = 0; col < raw_width; col++) {
                     uint8_t p = row / 8;
                     uint8_t b = row % 8;
-                    // Проверяем бит 'b' во всех колонках на странице 'p'
                     if (pixels[p * raw_width + col] & (1 << b)) {
                         row_is_empty = false;
                         break;
@@ -752,16 +568,13 @@ void SavaOLED_ESP32::drawPrintVert() {
             l.index = index;
             l.raw_width = raw_width;
             l.skip_top = empty_top;
-            
-            // Если весь символ пустой (пробел)
+
             if (empty_top == font_h_pixels) {
                 l.is_space = true;
                 l.real_height = (font_h_pixels > 4) ? (font_h_pixels / 3) : 4;
             } else {
-                l.is_space = false;
-                // 1.2 СКАНИРОВАНИЕ СНИЗУ
                 uint8_t empty_bottom = 0;
-                for (int row = font_h_pixels - 1; row >= empty_top; row--) {
+                for (int row = font_h_pixels - 1; row >= (int)empty_top; row--) {
                     bool row_is_empty = true;
                     for (int col = 0; col < raw_width; col++) {
                         uint8_t p = row / 8;
@@ -776,107 +589,149 @@ void SavaOLED_ESP32::drawPrintVert() {
                 }
                 l.real_height = font_h_pixels - empty_top - empty_bottom;
             }
-
             total_pixel_height += l.real_height + _charSpacing;
             layouts[layout_count++] = l;
         }
     }
-    if (total_pixel_height > 0) total_pixel_height -= _charSpacing;
+    if (layout_count == 0) return;
+    if (total_pixel_height > 0) total_pixel_height -= _charSpacing; // убираем последний интервал
 
-
-    // --- ПРОХОД 2: ОТРИСОВКА ---
-    int32_t screen_y = _cursorY;
-    
-    // Применяем выравнивание
-    // Рассчитываем доступное пространство от курсора до низа экрана
-    // Рассчитываем доступную высоту зоны
-    int16_t available_height;
-    
-    // Если задан 4-й параметр в setCursor (x2 > 0), используем его как ВЫСОТУ зоны
-    if (_cursorX2 > 0) {
-        available_height = _cursorX2;
-    } else {
-        // Иначе используем всё пространство до низа экрана
-        available_height = _height - _cursorY;
+    // --- ОПРЕДЕЛЕНИЕ ОКНА ОТРИСОВКИ ---
+    int16_t win_top = _cursorY;
+    int16_t win_bottom = _height;
+    // Если _cursorX2 задан как нижняя граница по Y (костыль — лучше завести _cursorY2)
+    if (_cursorX2 > _cursorY && _cursorX2 <= _height) {
+        win_bottom = _cursorX2;
     }
-    
-    // Применяем выравнивание внутри этой зоны
-    if (_cursorAlign == StrCenter) {
-        screen_y = _cursorY + (available_height - total_pixel_height) / 2;
-    } 
-    else if (_cursorAlign == StrRight) {
-        screen_y = _cursorY + available_height - total_pixel_height;
-    }
+    int16_t win_height = win_bottom - win_top;
+    if (win_height <= 0) return;
 
-    // Рисуем каждый символ
-    for (uint16_t k = 0; k < layout_count; k++) {
-        CharLayout l = layouts[k];
-        
-        // *Упрощение: берем шрифт из 0-го сегмента, т.к. обычно шрифт один
-        const Font* font = _segments[0].font; 
-        const uint8_t* pixels = &font->data[font->offsets[l.index]] + 1;
-        uint8_t pages_per_char = (font->height + 7) / 8;
+    // --- РАСЧЁТ СДВИГА ДЛЯ СКРОЛЛА ---
+    int32_t start_draw_y = win_top;
 
-        if (l.is_space) {
-            screen_y += l.real_height + _charSpacing;
-            continue;
+    if (_scrollEnabled && _cursorAlign == StrScroll) {
+        unsigned long currentTime = millis();
+        uint16_t scroll_delay = 1000 / (_scrollSpeed * 10);
+
+        if (currentTime - _lastScrollTime > scroll_delay) {
+            _lastScrollTime = currentTime;
+            _scrollOffset++;
         }
 
-        // Рисуем колонки (которые визуально становятся строками символа)
-        for (uint8_t col = 0; col < l.raw_width; col++) {
-            // X координата не меняется для символа (он часть столбца)
-            // Но у нас есть ширина символа (толщина штриха), она идет по X
-            int16_t draw_x = _cursorX + col;
-            if (draw_x >= _width) continue;
+        uint32_t loop_length = total_pixel_height + gap;
+        uint32_t offset = _scrollOffset % loop_length;
+        start_draw_y = _cursorY - offset; // Текст "уезжает вверх", начиная от курсора
 
-            // Собираем вертикальный столбец данных из всех страниц шрифта
-            uint32_t col_data = 0;
-            for (uint8_t p = 0; p < pages_per_char; p++) {
-                col_data |= ((uint32_t)pixels[p * l.raw_width + col] << (p * 8));
+        // Ограничиваем рост _scrollOffset, чтобы избежать переполнения
+        if (_scrollOffset >= loop_length * 10) {
+            _scrollOffset = _scrollOffset % loop_length;
+        }
+    } else {
+        if (_cursorAlign == StrCenter) {
+            start_draw_y = _cursorY + (win_height - total_pixel_height) / 2;
+        } else if (_cursorAlign == StrRight) {
+            start_draw_y = win_bottom - total_pixel_height;
+        }
+    }
+
+    const uint8_t pages_total = _height / 8;
+    int passes = (_scrollEnabled && _cursorAlign == StrScroll && _scrollLoop) ? 2 : 1;
+
+    // --- ПРОХОД 2: ОТРИСОВКА (с поддержкой цикла) ---
+    for (int p_cycle = 0; p_cycle < passes; p_cycle++) {
+        int32_t screen_y = start_draw_y;
+
+        // Второй проход: текст "подтягивается снизу"
+        if (p_cycle == 1) {
+            screen_y += (total_pixel_height + gap);
+        }
+
+        for (uint16_t k = 0; k < layout_count; k++) {
+            CharLayout l = layouts[k];
+
+            // Проверка видимости
+            if (screen_y + l.real_height <= win_top || screen_y >= win_bottom) {
+                screen_y += l.real_height + _charSpacing;
+                continue;
             }
 
-            // А. СДВИГАЕМ ДАННЫЕ ВВЕРХ (Удаляем пустоту empty_top)
-            col_data >>= l.skip_top;
-            
-            // Б. Маскируем лишнее снизу (оставляем только real_height бит)
-            uint32_t height_mask = (1UL << l.real_height) - 1;
-            col_data &= height_mask;
+            const Font* font = _segments[0].font;
+            const uint8_t* pixels = &font->data[font->offsets[l.index]] + 1;
+            uint8_t pages_per_char = (font->height + 7) / 8;
 
-            // В. Рендерим на экран по координате screen_y
-            // Нам нужно разбить col_data обратно на страницы экрана
-            
-            int16_t start_page = (screen_y >= 0) ? (screen_y / 8) : -1;
-            uint8_t bit_off = (screen_y >= 0) ? (screen_y % 8) : (8 + (screen_y % 8));
+            int16_t base_page_y = (screen_y >= 0) ? (screen_y / 8) : ((screen_y - 7) / 8);
+            uint8_t y_bit_shift = (screen_y >= 0) ? (screen_y % 8) : (8 + (screen_y % 8));
+            if (y_bit_shift == 8) y_bit_shift = 0;
 
-            // Сдвигаем данные на фазу экрана
-            uint64_t render_data = (uint64_t)col_data << bit_off;
-            uint64_t render_mask = (uint64_t)height_mask << bit_off;
+            for (uint8_t col = 0; col < l.raw_width; col++) {
+                int16_t draw_x = _cursorX + col;
+                if (draw_x < 0 || draw_x >= _width) continue;
 
-            // Записываем в буфер постранично (до 4-5 страниц макс)
-            for (int p_off = 0; p_off < 5; p_off++) {
-                int16_t dest_page = start_page + p_off;
-                if (dest_page >= 0 && dest_page < (_height / 8)) {
+                // Собираем данные символа
+                uint32_t col_data = 0;
+                for (uint8_t p = 0; p < pages_per_char; p++) {
+                    col_data |= ((uint32_t)pixels[p * l.raw_width + col]) << (p * 8);
+                }
+                col_data >>= l.skip_top;
+                if (l.real_height < 32) {
+                    col_data &= (1UL << l.real_height) - 1;
+                }
+
+                uint64_t render_data = (uint64_t)col_data << y_bit_shift;
+                uint64_t render_mask = (uint64_t)((1ULL << l.real_height) - 1) << y_bit_shift;
+
+                // Нанесение по страницам
+                for (int p_off = 0; p_off < 5 && render_mask; p_off++) {
+                    int16_t dest_page = base_page_y + p_off;
+                    if (dest_page < 0 || dest_page >= pages_total) {
+                        render_data >>= 8;
+                        render_mask >>= 8;
+                        continue;
+                    }
+
+                    int16_t page_start_px = dest_page * 8;
+                    int16_t page_end_px = page_start_px + 8;
+                    int16_t overlap_start = max(page_start_px, win_top);
+                    int16_t overlap_end = min(page_end_px, win_bottom);
+
+                    if (overlap_start >= overlap_end) {
+                        render_data >>= 8;
+                        render_mask >>= 8;
+                        continue;
+                    }
+
+                    uint8_t clip_mask = 0xFF;
+                    if (win_top > page_start_px) {
+                        clip_mask &= (0xFF << (win_top - page_start_px));
+                    }
+                    if (win_bottom < page_end_px) {
+                        clip_mask &= (0xFF >> (page_end_px - win_bottom));
+                    }
+
                     uint32_t idx = draw_x + dest_page * _width;
                     uint8_t byte_data = (uint8_t)(render_data & 0xFF);
-                    uint8_t byte_mask = (uint8_t)(render_mask & 0xFF);
+                    uint8_t byte_mask = (uint8_t)(render_mask & 0xFF) & clip_mask;
 
                     if (byte_mask) {
-                        if (_drawMode == REPLACE) 
+                        if (_drawMode == REPLACE) {
                             _buffer[idx] = (_buffer[idx] & ~byte_mask) | (byte_data & byte_mask);
-                        else if (_drawMode == ADD_UP) 
+                        } else if (_drawMode == ADD_UP) {
                             _buffer[idx] |= (byte_data & byte_mask);
-                        else if (_drawMode == INV_AUTO) 
+                        } else if (_drawMode == INV_AUTO) {
                             _buffer[idx] ^= (byte_data & byte_mask);
+                        }
                     }
+
+                    render_data >>= 8;
+                    render_mask >>= 8;
                 }
-                render_data >>= 8;
-                render_mask >>= 8;
-                if (render_mask == 0) break;
             }
+            screen_y += l.real_height + _charSpacing;
         }
-        screen_y += l.real_height + _charSpacing;
     }
 }
+
+
 
 
 

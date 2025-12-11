@@ -3,8 +3,8 @@
 // 1. ПОДКЛЮЧАЕМ ВАШИ ШРИФТЫ
 
 //#include "Fonts/SavaFont_MyFont_Latin_17x25.h"
-#include "Fonts/SavaFont_calibri_Cyrillic_10x14.h"
-#include "Fonts/SavaFont_segments_Numbers_10x14.h"
+#include "Fonts/SavaFont_90grad_Pro_15px.h"
+//#include "Fonts/SavaFont_segments_Numbers_10x14.h"
 //SavaFont_Tahoma_Latin_29x32.h
 //SavaFont_Arialdb_Latin_33x36.h
 
@@ -15,7 +15,7 @@
 #define OLED_SCL 4
 
 // Объект дисплея
-SavaOLED_ESP32 oled(SCREEN_WIDTH, SCREEN_HEIGHT, 256, I2C_NUM_0);
+SavaOLED_ESP32 oled(SCREEN_WIDTH, SCREEN_HEIGHT, I2C_NUM_0);
 
 uint32_t StartFps = 0;
 uint32_t tim = 0;
@@ -48,7 +48,7 @@ void loop() {
     oled.setScroll(!flag);
     oled.setDrawMode(INV_AUTO);
     oled.setCharSpacing(1);
-    oled.setFont(SavaFont_calibri_Cyrillic_10x14);
+    oled.setFont(SavaFont_90grad_Pro_15px);
     oled.addPrint("ЦЫПЛЁНОК ТАФИКЮРА должен щенку аЩеНОК молчит");
     oled.drawPrint();
 
@@ -57,7 +57,7 @@ void loop() {
     oled.setScroll(flag);
     oled.setDrawMode(INV_AUTO);
     oled.setCharSpacing(1);
-    oled.setFont(SavaFont_segments_Numbers_10x14);
+    oled.setFont(SavaFont_90grad_Pro_15px);
     oled.addPrint(millis());
     oled.drawPrint();
 
