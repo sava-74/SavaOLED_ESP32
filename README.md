@@ -99,7 +99,7 @@ void setup() {
 |---------|-----|--------| 
 | font | const Font& | Ссылка на шрифт Fonts\SavaFont_5x8.h  |
 
-----
+---
 
 📏 setCharSpacing()
 
@@ -206,7 +206,7 @@ void setup() {
 
 Рисует накопленную строку в буфер. Учитывает выравнивание и скроллинг.
 
-----
+---
 
 ### void drawPrintVert()
 
@@ -260,8 +260,8 @@ void bezier(...), drawPeak(...)
 | Функция | Назначение | 
 |--------|----------| 
 | setScroll(enabled) | Вкл/выкл скроллинг | 
-| setScrollSpeed(speed, loop) | Скорость (1–10) и цикл | 
-| setScrollSpeedVert(speed) | Вертикальная скорость |
+| setScrollSpeed(speed, loop) | Скорость (1–10) | 
+| setScrollSpeedVert(speed) | Вертикальная скорость (1–10)|
 
 ---
 
@@ -278,12 +278,14 @@ void bezier(...), drawPeak(...)
 📂 Примеры
 BasicText
 ```bash
+oled.clear();
 oled.print("Привет, мир!");
 oled.print(3.14);
 oled.drawPrint();
 oled.display();
 ```
 ```bash
+oled.clear();
 oled.setScrollSpeed(5, true);  // в void setup
 oled.setCursor(0, 20, StrScroll);
 oled.setScroll(true);
@@ -293,8 +295,9 @@ oled.print("Бегущая строка на OLED! ");
 oled.drawPrint();
 oled.display();
 ```
-VerticalText
+* VerticalText
 ```bash
+oled.clear();
 oled.setFont(font_Vert9);
 oled.setCursor(10, 0);
 oled.print("Temp: ");
@@ -302,14 +305,15 @@ oled.print(25.5);
 oled.drawPrintVert();
 oled.display();
 ```
-GraphicsDemo
-cpp
+* GraphicsDemo
+```bash
 oled.line(0, 0, 127, 63, ADD_UP);
 oled.circle(64, 32, 20, REPLACE, true);
 oled.rectR(20, 20, 80, 20, 8, INV_AUTO, false);
 oled.display();
-MixedFonts
-cpp
+```
+* MixedFonts
+```bash
 oled.setFont(font_Small);
 oled.print("Счёт: ");
 oled.setFont(font_Big);
@@ -318,22 +322,26 @@ oled.setFont(font_Small);
 oled.print(" очков");
 oled.drawPrint();
 oled.display();
-🛠 Требования
-Платформа: ESP32
-Среда: Arduino IDE или ESP-IDF
+```
+---
+
+# 🛠 Требования
+
+Платформа: ESP32 ядро v3.x.x
+---
+Среда: Arduino IDE 
+---
 Библиотеки: driver/i2c_master.h (входит в ESP-IDF)
+---
 📄 Лицензия
+
 MIT — свободное использование и модификация.
-
+---
 📬 Автор
-👤 Sava
-📧 sava@example.com (условно)
-🔗 github.com/sava/SavaOLED_ESP32
+👤 SavaLab
+📧 sava-74@inbox.ru
+🔗 [github.com/sava/SavaOLED_ESP32](https://github.com/sava-74/SavaOLED_ESP32.git)
 
-🚀 Планируется
-Поддержка SSD1309, SH1106
-Шрифты с SD-карты
-Анимации и меню
-Поддержка println() без Print класса
+
 ✅ Готов к использованию!
 Откройте примеры в Arduino IDE и начните творить.
