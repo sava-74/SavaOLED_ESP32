@@ -61,6 +61,9 @@ SavaOLED_ESP32::SavaOLED_ESP32(uint8_t width, uint8_t height, i2c_port_t port) {
     _scrollOffset = 0;
     _lastScrollTime = 0;
     _scrollingLineY = -1;
+    _vertScrollOffset = 0;
+    _vertLastScrollTime = 0;
+    _vertScrollSpeed = 3;
 	_Buffer = false;
 	
     // --- Инициализация бинарного буфера ---
@@ -151,6 +154,12 @@ void SavaOLED_ESP32::setScrollSpeed(uint8_t speed, bool loop) {
     if (speed > 10) speed = 10;
     _scrollSpeed = speed;
     _scrollLoop = loop;
+}
+
+void SavaOLED_ESP32::setScrollSpeedVert(uint8_t speed) {
+    if (speed < 1) speed = 1;
+    if (speed > 10) speed = 10;
+    _vertScrollSpeed = speed;
 }
 
 void SavaOLED_ESP32::setScroll(bool enabled) {
@@ -261,7 +270,7 @@ void SavaOLED_ESP32::addPrint(int32_t value, uint8_t min_digits) {
         snprintf(buffer, sizeof(buffer), "%ld", value);
     }
     addPrint(buffer);
-	Serial.println(buffer);
+	//Serial.println(buffer);
 }
 
 void SavaOLED_ESP32::addPrint(uint32_t value, uint8_t min_digits) {
@@ -409,8 +418,8 @@ void SavaOLED_ESP32::drawPrint() {
 
     // --- Шаг 2: Вычисление смещений и копирование в видеобуфер ---
     int16_t startX_on_screen = _cursorX;
-    int16_t endX_on_screen = (_cursorX2 == -1) ? (_width - 1) : _cursorX2;
-    int16_t region_width = endX_on_screen - startX_on_screen + 1; // включительно
+    // Если x2 задан (>0), он считается ШИРИНОЙ. Иначе берем все место до конца экрана.
+    int16_t region_width = (_cursorX2 > 0) ? _cursorX2 : (_width - _cursorX);
 
     uint16_t source_offset = 0; // effective non-negative offset for indexing
 
@@ -429,7 +438,7 @@ void SavaOLED_ESP32::drawPrint() {
     } else {
         // no scrolling: compute startX_on_screen for alignment
         if (_cursorAlign == StrCenter) { startX_on_screen = _cursorX + (region_width / 2) - (_currentLineWidth / 2); }
-        else if (_cursorAlign == StrRight) { startX_on_screen = endX_on_screen - _currentLineWidth; }
+        else if (_cursorAlign == StrRight) { startX_on_screen = _cursorX + region_width - _currentLineWidth; }
         source_offset = 0;
     }
 	
@@ -611,21 +620,20 @@ void SavaOLED_ESP32::drawPrintVert() {
 
     if (_scrollEnabled && _cursorAlign == StrScroll) {
         unsigned long currentTime = millis();
-        uint16_t scroll_delay = 1000 / (_scrollSpeed * 10);
-
-        if (currentTime - _lastScrollTime > scroll_delay) {
-            _lastScrollTime = currentTime;
-            _scrollOffset++;
+        // Используем _vertScrollSpeed
+        uint16_t scroll_delay = 1000 / (_vertScrollSpeed * 10);
+        
+        // Используем _vertLastScrollTime и _vertScrollOffset
+        if (currentTime - _vertLastScrollTime > scroll_delay) { 
+            _vertLastScrollTime = currentTime; 
+            _vertScrollOffset++; 
         }
-
         uint32_t loop_length = total_pixel_height + gap;
-        uint32_t offset = _scrollOffset % loop_length;
-        start_draw_y = _cursorY - offset; // Текст "уезжает вверх", начиная от курсора
+        // Используем _vertScrollOffset для расчета смещения
+        int32_t offset = _vertScrollOffset % loop_length;
+        
+        start_draw_y = _cursorY - offset;
 
-        // Ограничиваем рост _scrollOffset, чтобы избежать переполнения
-        if (_scrollOffset >= loop_length * 10) {
-            _scrollOffset = _scrollOffset % loop_length;
-        }
     } else {
         if (_cursorAlign == StrCenter) {
             start_draw_y = _cursorY + (win_height - total_pixel_height) / 2;
@@ -1140,6 +1148,11 @@ uint16_t SavaOLED_ESP32::_getCharIndex(const Font* font, uint16_t char_code) {
         if (char_code == '.') return 0;
         if (char_code == ':') return 11;
         if (char_code == '-') return 12;
+        if (char_code == '+') return 13;
+        if (char_code == '/') return 14;
+        if (char_code == '*') return 15;
+        if (char_code == '=') return 16;
+        if (char_code == ' ') return 17;
         // Тут можно добавить иконку батарейки или другие спецзнаки
         return 0xFFFF;
     }

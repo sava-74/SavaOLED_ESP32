@@ -230,6 +230,12 @@ public:
     */
     void setScrollSpeed(uint8_t speed = 3, bool loop = true);
 
+    /**
+    * @brief Установить скорость вертикального скроллинга.
+    * @param speed - скорость от 1 до 10.
+    */
+    void setScrollSpeedVert(uint8_t speed = 3);
+
 	/** // -- добавит эту строку
     * @brief Установить режим отправки кадрового буфера. 
     * @param enabled - FULL = отправлять одним блоком (быстро), PAGES = постранично (стабильно).
@@ -429,6 +435,9 @@ private:
     uint32_t _scrollOffset;     						/**< @brief Текущее смещение скролла (натуральное число, инкрементируется со временем) */
     unsigned long _lastScrollTime; 						/**< @brief Время (millis) последнего шага скролла */
 	int16_t _scrollingLineY;    						/**< @brief Y координата строки, для которой ведётся скроллинг */
+    uint32_t _vertScrollOffset;     					/**< @brief Текущее смещение вертикального скролла (натуральное число, инкрементируется со временем) */
+    unsigned long _vertLastScrollTime; 					/**< @brief Время (millis) последнего шага вертикального скролла */
+    uint8_t _vertScrollSpeed;       					/**< @brief Скорость вертикального скролла (1..10) */
 	
 	uint8_t* _lineBuffer;           					/**< @brief Временный бинарный буфер для рендеринга строки (по колонкам) */
     uint16_t _lineBufferWidth;      					/**< @brief Ширина _lineBuffer в колонках */
