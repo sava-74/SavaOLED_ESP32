@@ -232,12 +232,22 @@ int16_t SavaOLED_ESP32::getCursorY() const {
 	return _cursorY;
 }
 
+uint16_t SavaOLED_ESP32::getTextWidth() const {
+    if (_segmentCount == 0) return 0;
+    return _currentLineWidth;
+}
+
+uint16_t SavaOLED_ESP32::getTextHeight() const {
+    if (_segmentCount == 0 || !_currentFont) return 0;
+    return _currentFont->height;
+}
+
 //****************************************************************************************
 //--- Публичные функции "Накопления" (Data Accumulation) ---
 // --- Перегруженные функции print, работающие с курсором ---
-// --- Основная функция addPrint для const char* ---
+// --- Основная функция print для const char* ---
 //****************************************************************************************
-void SavaOLED_ESP32::addPrint(const char* text) {
+void SavaOLED_ESP32::print(const char* text) {
     if (_segmentCount >= MAX_SEGMENTS) return; // Достигнут лимит сегментов
 
     size_t text_len = strlen(text);
@@ -259,7 +269,7 @@ void SavaOLED_ESP32::addPrint(const char* text) {
 
     _lineChanged = true;
 }
-void SavaOLED_ESP32::addPrint(int32_t value, uint8_t min_digits) {
+void SavaOLED_ESP32::print(int32_t value, uint8_t min_digits) {
     char buffer[22] = {0};
     if (min_digits > 0) {
         char format[8] = {0};
@@ -269,11 +279,11 @@ void SavaOLED_ESP32::addPrint(int32_t value, uint8_t min_digits) {
     } else {
         snprintf(buffer, sizeof(buffer), "%ld", value);
     }
-    addPrint(buffer);
+    print(buffer);
 	//Serial.println(buffer);
 }
 
-void SavaOLED_ESP32::addPrint(uint32_t value, uint8_t min_digits) {
+void SavaOLED_ESP32::print(uint32_t value, uint8_t min_digits) {
     char buffer[22] = {0};
     if (min_digits > 0) {
         char format[8] = {0};
@@ -283,20 +293,20 @@ void SavaOLED_ESP32::addPrint(uint32_t value, uint8_t min_digits) {
     } else {
         snprintf(buffer, sizeof(buffer), "%lu", value);
     }
-    addPrint(buffer);
+    print(buffer);
 }
 
 // Перегрузки для меньших типов просто вызывают основные реализации
-void SavaOLED_ESP32::addPrint(int value, uint8_t min_digits) { addPrint((int32_t)value, min_digits); }
-void SavaOLED_ESP32::addPrint(int8_t value, uint8_t min_digits) { addPrint((int32_t)value, min_digits); }
-void SavaOLED_ESP32::addPrint(int16_t value, uint8_t min_digits) { addPrint((int32_t)value, min_digits); }
-void SavaOLED_ESP32::addPrint(uint8_t value, uint8_t min_digits) { addPrint((uint32_t)value, min_digits); }
-void SavaOLED_ESP32::addPrint(uint16_t value, uint8_t min_digits) { addPrint((uint32_t)value, min_digits); }
+void SavaOLED_ESP32::print(int value, uint8_t min_digits) { print((int32_t)value, min_digits); }
+void SavaOLED_ESP32::print(int8_t value, uint8_t min_digits) { print((int32_t)value, min_digits); }
+void SavaOLED_ESP32::print(int16_t value, uint8_t min_digits) { print((int32_t)value, min_digits); }
+void SavaOLED_ESP32::print(uint8_t value, uint8_t min_digits) { print((uint32_t)value, min_digits); }
+void SavaOLED_ESP32::print(uint16_t value, uint8_t min_digits) { print((uint32_t)value, min_digits); }
 
-/*void SavaOLED_ESP32::addPrint(float value, uint8_t decimalPlaces) {char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); addPrint(buffer); }
-void SavaOLED_ESP32::addPrint(double value, uint8_t decimalPlaces) { char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); addPrint(buffer); }*/
+/*void SavaOLED_ESP32::print(float value, uint8_t decimalPlaces) {char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); print(buffer); }
+void SavaOLED_ESP32::print(double value, uint8_t decimalPlaces) { char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); print(buffer); }*/
 
-void SavaOLED_ESP32::addPrint(double value, uint8_t decimalPlaces, uint8_t min_width) {
+void SavaOLED_ESP32::print(double value, uint8_t decimalPlaces, uint8_t min_width) {
     char buffer[32] = {0};
     char format[12] = {0};
 
@@ -316,15 +326,15 @@ void SavaOLED_ESP32::addPrint(double value, uint8_t decimalPlaces, uint8_t min_w
     
     // Применяем созданный формат для преобразования числа в строку
     snprintf(buffer, sizeof(buffer), format, value);
-    addPrint(buffer);
+    print(buffer);
 }
 
 // Перегрузка для float просто вызывает реализацию для double
-void SavaOLED_ESP32::addPrint(float value, uint8_t decimalPlaces, uint8_t min_width) {
-    addPrint((double)value, decimalPlaces, min_width);
+void SavaOLED_ESP32::print(float value, uint8_t decimalPlaces, uint8_t min_width) {
+    print((double)value, decimalPlaces, min_width);
 }
 
-void SavaOLED_ESP32::addPrint(const String &s) { addPrint(s.c_str()); }
+void SavaOLED_ESP32::print(const String &s) { print(s.c_str()); }
 
 //****************************************************************************************
 //--- Публичные функции "Отрисовки" (Rendering) ---

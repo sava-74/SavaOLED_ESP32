@@ -250,50 +250,50 @@ public:
     * @brief Добавить C-строку в текущий буфер печати.
     * @param text - нуль-терминированная строка.
     */
-	void addPrint(const char* text); 
+	void print(const char* text); 
     
 	/**
     * @brief Добавить целое число (int) в буфер печати с опциональным форматированием.
     * @param value - значение для вывода.
     * @param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
     */
-    void addPrint(int value, uint8_t min_digits = 0);
+    void print(int value, uint8_t min_digits = 0);
 	
 	/**
     * @brief Добавить целое число (int8_t -128 | 127) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-    void addPrint(int8_t value, uint8_t min_digits = 0);
+    void print(int8_t value, uint8_t min_digits = 0);
 	
 	/**
     * @brief Добавить целое число (uint8_t(byte) 0 | 255) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-	void addPrint(uint8_t value, uint8_t min_digits = 0);
+	void print(uint8_t value, uint8_t min_digits = 0);
 	
 	/**
     * @brief Добавить целое число (int16_t(short) -32 768 | 32 767) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-	void addPrint(int16_t value, uint8_t min_digits = 0);
+	void print(int16_t value, uint8_t min_digits = 0);
 	
 	/**
     * @brief Добавить целое число (uint16_t(unsigned short) 0 | 65 535) ) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-	void addPrint(uint16_t value, uint8_t min_digits = 0);
+	void print(uint16_t value, uint8_t min_digits = 0);
 	
 	/**
     * @brief Добавить целое число (uint32_t(unsigned long) 0 | 4 294 967 295) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-	void addPrint(uint32_t value, uint8_t min_digits = 0);
+	void print(uint32_t value, uint8_t min_digits = 0);
     
 	/**
     * @brief Добавить целое число (int32_t(long) -2 147 483 648 | 2 147 483 647) в буфер печати.
     *@param min_digits - (опционально) минимальное количество знаков (дополняется ведущими нулями).
 	*/
-    void addPrint(int32_t value, uint8_t min_digits = 0); 
+    void print(int32_t value, uint8_t min_digits = 0); 
     
 	/**
     * @brief Добавить число с плавающей точкой (float) в буфер печати.
@@ -301,18 +301,18 @@ public:
     * @param decimalPlaces - количество знаков после запятой.
 	*@param min_width - (опционально) минимальная общая ширина вывода (дополняется пробелами слева).
     */
-    void addPrint(float value, uint8_t decimalPlaces = 2, uint8_t min_width = 0); 
+    void print(float value, uint8_t decimalPlaces = 2, uint8_t min_width = 0); 
     
 	/**
     * @brief Добавить double в буфер печати.
     *@param min_width - (опционально) минимальная общая ширина вывода (дополняется пробелами слева).
 	*/
-    void addPrint(double value, uint8_t decimalPlaces = 2, uint8_t min_width = 0); 
+    void print(double value, uint8_t decimalPlaces = 2, uint8_t min_width = 0); 
     
 	/**
     * @brief Добавить объект String в буфер печати.
     */
-    void addPrint(const String &s); 
+    void print(const String &s); 
 //#############################################################################################################################
 //#############################################################################################################################
     /**
@@ -345,7 +345,13 @@ public:
     * @brief Получить текущую Y позицию курсора.
     */
 	int16_t getCursorY() const;
-	
+
+    /**< @brief Получить ширину текущей строки в пикселях */
+    uint16_t getTextWidth() const;
+    /**< @brief Получить высоту текущей строки в пикселях */
+    uint16_t getTextHeight() const;
+    //****************************************************************************************
+    //--- Публичные функции управления дисплеем ---
     /**
     * @brief Установить контраст (яркость) дисплея.
     * @param value - 0..255.
