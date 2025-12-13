@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_MYFONT_PROPORTIONAL_16PX_H
 #define SAVAFONT_MYFONT_PROPORTIONAL_16PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_MyFont_Proportional_16px_Offsets[] = {

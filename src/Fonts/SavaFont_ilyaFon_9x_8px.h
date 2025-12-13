@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_ILYAFON_9X_8PX_H
 #define SAVAFONT_ILYAFON_9X_8PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_ilyaFon_9x_8px_Offsets[] = {

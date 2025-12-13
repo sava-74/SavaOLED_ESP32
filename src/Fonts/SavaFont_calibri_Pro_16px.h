@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_CALIBRI_PRO_16PX_H
 #define SAVAFONT_CALIBRI_PRO_16PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_calibri_Pro_16px_Offsets[] = {

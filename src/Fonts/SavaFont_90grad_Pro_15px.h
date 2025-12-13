@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_90GRAD_PRO_15PX_H
 #define SAVAFONT_90GRAD_PRO_15PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_90grad_Pro_15px_Offsets[] = {

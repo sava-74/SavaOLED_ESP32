@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_VERT_PRO_8PX_H
 #define SAVAFONT_VERT_PRO_8PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_vert_Pro_8px_Offsets[] = {

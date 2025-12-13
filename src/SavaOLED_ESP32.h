@@ -197,7 +197,7 @@ public:
 	/**
     * @brief Очистить кадровый буфер (установить все биты в 0).
     */
-	void clearBuffer();
+	void clear();
 
     /**
     * @brief Установить текущий шрифт для последующих операций print.
@@ -209,32 +209,32 @@ public:
     * @brief Установить режим отрисовки для текста и примитивов.
     * @param mode - режим отрисовки (REPLACE = очистит и поверх/INV_AUTO = авто-инверсия/ADD_UP = наложение).
     */
-    void setDrawMode(uint8_t mode = REPLACE);
+    void drawMode(uint8_t mode = REPLACE);
 	
 	/** // -- добавит эту строку
     * @brief Установить межсимвольный интервал для последующих print. 
     * @param spacing - количество пикселей между символами (по умолчанию 1).
     */ 
-    void setCharSpacing(uint8_t spacing);
+    void charSpacing(uint8_t spacing);
 	
 	/**
     * @brief Включить/выключить режим скроллинга для текущей строки.
     * @param enabled - true = включить, false = выключить.
     */
-	void setScroll(bool enabled);
+	void scroll(bool enabled);
 	
 	/**
     * @brief Установить скорость и режим скроллинга.
     * @param speed - скорость от 1 (медленно) до 10 (быстро).
     * @param loop - true = зациклить, false = проиграть один раз.
     */
-    void setScrollSpeed(uint8_t speed = 3, bool loop = true);
+    void scrollSpeed(uint8_t speed = 3, bool loop = true);
 
     /**
     * @brief Установить скорость вертикального скроллинга.
     * @param speed - скорость от 1 до 10.
     */
-    void setScrollSpeedVert(uint8_t speed = 3);
+    void scrollSpeedVert(uint8_t speed = 3);
 
 	/** // -- добавит эту строку
     * @brief Установить режим отправки кадрового буфера. 
@@ -334,7 +334,7 @@ public:
     * @param align - режим выравнивания (StrLeft, StrCenter, StrRight).
     * @param x2 - правая граница диапазона X (по умолчанию -1 -> ширина экрана).
     */
-	void setCursor(int16_t x, int16_t y, uint8_t align = StrLeft, int16_t x2 = -1);
+	void cursor(int16_t x, int16_t y, uint8_t align = StrLeft, int16_t x2 = -1);
     
 	/**
     * @brief Получить текущую X позицию курсора.
@@ -356,12 +356,12 @@ public:
     * @brief Установить контраст (яркость) дисплея.
     * @param value - 0..255.
     */
-    void setContrast(uint8_t value);      // 0..255
+    void contrast(uint8_t value);      // 0..255
     /**
     * @brief Включить или выключить питание/вывод дисплея.
     * @param mode - true = включить, false = выключить.
     */
-    void setPower(bool mode);             // включить/выключить
+    void power(bool mode);             // включить/выключить
     /**
     * @brief Отразить экран по горизонтали аппаратно (SEG remap).
     * @param mode - true = отразить, false = нормальная ориентация.
@@ -381,7 +381,7 @@ public:
     * @brief Установить аппаратный поворот экрана на 0 или 180 градусов.
     * @param rotate180 - true или false.
     */
-    void setRotation(bool rotate180); 
+    void rotation(bool rotate180); 
 
 private:
     // --- Внутренние функции ---

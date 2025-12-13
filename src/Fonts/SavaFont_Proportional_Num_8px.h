@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_PROPORTIONAL_NUM_8PX_H
 #define SAVAFONT_PROPORTIONAL_NUM_8PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (где начинается каждый символ в массиве Data)
 const uint16_t SavaFont_Proportional_Num_8px_Offsets[] = {

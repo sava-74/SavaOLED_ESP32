@@ -128,7 +128,7 @@ void SavaOLED_ESP32::init(uint32_t freq, int8_t _sda, int8_t _scl) {
     uint8_t mux_ratio_cmd[] = {OLED_SET_MUX_RATIO, (uint8_t)(_height - 1)};
     _sendCommands(mux_ratio_cmd, sizeof(mux_ratio_cmd));
     
-    clearBuffer();
+    clear();
     display();
 }
 
@@ -141,28 +141,28 @@ void SavaOLED_ESP32::setFont(const Font &font) {
 }
 
 
-void SavaOLED_ESP32::setDrawMode(uint8_t mode) { 
+void SavaOLED_ESP32::drawMode(uint8_t mode) { 
     _drawMode = mode;
 }
 
-void SavaOLED_ESP32::setCharSpacing(uint8_t spacing) { 
+void SavaOLED_ESP32::charSpacing(uint8_t spacing) { 
     _charSpacing = spacing; 
 }
 
-void SavaOLED_ESP32::setScrollSpeed(uint8_t speed, bool loop) {
+void SavaOLED_ESP32::scrollSpeed(uint8_t speed, bool loop) {
     if (speed < 1) speed = 1;
     if (speed > 10) speed = 10;
     _scrollSpeed = speed;
     _scrollLoop = loop;
 }
 
-void SavaOLED_ESP32::setScrollSpeedVert(uint8_t speed) {
+void SavaOLED_ESP32::scrollSpeedVert(uint8_t speed) {
     if (speed < 1) speed = 1;
     if (speed > 10) speed = 10;
     _vertScrollSpeed = speed;
 }
 
-void SavaOLED_ESP32::setScroll(bool enabled) {
+void SavaOLED_ESP32::scroll(bool enabled) {
     _scrollEnabled = enabled;
 }
 
@@ -170,13 +170,13 @@ void SavaOLED_ESP32::setBuffer(bool enabled) {
     _Buffer = enabled; 
 }
 
-void SavaOLED_ESP32::setContrast(uint8_t value) {
+void SavaOLED_ESP32::contrast(uint8_t value) {
     uint8_t cmds[2] = { OLED_SET_CONTRAST, value };
     _sendCommands(cmds, sizeof(cmds));
     _contrast = value;
 }
 
-void SavaOLED_ESP32::setPower(bool mode) {
+void SavaOLED_ESP32::power(bool mode) {
     uint8_t cmd = mode ? OLED_DISPLAY_ON : OLED_DISPLAY_OFF;
     _sendCommands(&cmd, 1);
 }
@@ -198,7 +198,7 @@ void SavaOLED_ESP32::invertDisplay(bool mode) {
     _inverted = mode;
 }
 
-void SavaOLED_ESP32::setRotation(bool rotate180) {
+void SavaOLED_ESP32::rotation(bool rotate180) {
     if (!rotate180) {
         uint8_t cmds[] = { OLED_NORMAL_H, OLED_NORMAL_V };
         _sendCommands(cmds, sizeof(cmds));
@@ -213,7 +213,7 @@ void SavaOLED_ESP32::setRotation(bool rotate180) {
 //--- Публичные функции "Управление курсором" ---
 //****************************************************************************************
 
-void SavaOLED_ESP32::setCursor(int16_t x, int16_t y, uint8_t align, int16_t x2) {
+void SavaOLED_ESP32::cursor(int16_t x, int16_t y, uint8_t align, int16_t x2) {
 	_cursorX = x;       		
 	_cursorY = y;       		
 	_cursorAlign = align; 		
@@ -762,7 +762,7 @@ void SavaOLED_ESP32::display() {
 }
 
 
-void SavaOLED_ESP32::clearBuffer() {
+void SavaOLED_ESP32::clear() {
     // Возвращаем на очистку нулями, чтобы видеть результат, а не белый экран
     memset(_buffer, 0x00, _bufferSize);
 }

@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_MYFONT_NUM_32PX_H
 #define SAVAFONT_MYFONT_NUM_32PX_H
-#include "SavaOLED_ESP32.h"
+//#include "SavaOLED_ESP32.h"
 
 // Таблица смещений (13 символов)
 const uint16_t SavaFont_MyFont_Num_32px_Offsets[] = {
