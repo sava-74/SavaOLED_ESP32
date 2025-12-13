@@ -23,7 +23,7 @@
 
 ### Через Arduino IDE
 
-1. Скачайте архив: [[SavaOLED_ESP32.zip](https://github.com/sava-74/SavaOLED_ESP32.git) 
+1. Скачайте архив: [SavaOLED_ESP32.zip](https://github.com/sava-74/SavaOLED_ESP32.git) 
 2. В Arduino IDE:  
    **Скетч → Подключить библиотеку → Добавить .ZIP библиотеку**
 3. Перезапустите IDE
