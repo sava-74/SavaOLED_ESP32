@@ -44,8 +44,8 @@ SavaOLED_ESP32::SavaOLED_ESP32(uint8_t width, uint8_t height, i2c_port_t port) {
 	_port = port;
 	_address = 0x3C; // <-- Инициализация адреса по умолчанию (критично)
 	_bufferSize = (_width * _height) / 8;
-    _buffer = new uint8_t[_bufferSize];
-    _tx_buffer = new uint8_t[_bufferSize + 1];
+    _buffer = std::make_unique<uint8_t[]>(_bufferSize);                                         //_buffer = new uint8_t[_bufferSize];
+    _tx_buffer = std::make_unique<uint8_t[]>(_bufferSize + 1);                                  //_tx_buffer = new uint8_t[_bufferSize + 1];
     _bus_handle = NULL;
     _dev_handle = NULL;
 	_currentFont = nullptr;
@@ -69,8 +69,8 @@ SavaOLED_ESP32::SavaOLED_ESP32(uint8_t width, uint8_t height, i2c_port_t port) {
     // --- Инициализация бинарного буфера ---
     _lineBufferWidth = 1024; // -- изменено: увеличен буфер по ширине
     _lineBufferHeightPages = 8; // -- изменено: увеличен буфер по высоте
-    _lineBuffer = new uint8_t[_lineBufferWidth * _lineBufferHeightPages];
-    _vertBuffer = new uint8_t[VERT_BUF_SIZE]; 
+    _lineBuffer = std::make_unique<uint8_t[]>(_lineBufferWidth * _lineBufferHeightPages);       //_lineBuffer = new uint8_t[_lineBufferWidth * _lineBufferHeightPages];
+    _vertBuffer = std::make_unique<uint8_t[]>(VERT_BUF_SIZE);                                   //_vertBuffer = new uint8_t[VERT_BUF_SIZE]; 
     _vertBufferHeight = 0;
     _currentLineWidth = 0;
     _segmentCount = 0;
@@ -94,10 +94,10 @@ SavaOLED_ESP32::~SavaOLED_ESP32() {
     }
 
     // Освобождаем память, чтобы избежать утечек
-    delete[] _buffer;
-    delete[] _tx_buffer;
-	delete[] _lineBuffer;
-    delete[] _vertBuffer;
+    //delete[] _buffer;
+    //delete[] _tx_buffer;
+	//delete[] _lineBuffer;
+    //delete[] _vertBuffer;
 }
 
 //****************************************************************************************
@@ -364,7 +364,7 @@ void SavaOLED_ESP32::drawPrint() {
         _lineBufferHeightPages = max_line_pages;
 
         // 1.2 Очищаем буфер
-        memset(_lineBuffer, 0, _lineBufferWidth * max_line_pages);
+        memset(_lineBuffer.get(), 0, _lineBufferWidth * max_line_pages);
         
         int16_t current_x = 0;
 
@@ -415,7 +415,7 @@ void SavaOLED_ESP32::drawPrint() {
                             
                             // Защита от выхода за пределы вертикального буфера
                             if (dest_idx < (uint32_t)(_lineBufferWidth * max_line_pages)) {
-                                _lineBuffer[dest_idx] = glyph_pixels[p * char_width + col];
+                                _lineBuffer.get()[dest_idx] = glyph_pixels[p * char_width + col];
                             }
                         }
                     }
@@ -480,7 +480,7 @@ void SavaOLED_ESP32::drawPrint() {
             for (uint8_t p = 0; p < _lineBufferHeightPages; p++) {
                 uint32_t source_idx = (uint32_t)source_x + (uint32_t)p * _lineBufferWidth;
                 
-                uint8_t data_byte = _lineBuffer[source_idx];
+                uint8_t data_byte = _lineBuffer.get()[source_idx];
 
                 // Нельзя пропускать нули в режиме REPLACE, иначе фон не очистится!
                 // Пропускаем только если это ADD_UP или INV_AUTO и байт пустой.
@@ -506,24 +506,24 @@ void SavaOLED_ESP32::drawPrint() {
                         // Это работает даже если НовыеДанные == 0 (стирает фон)
                         if (dest_page_top < pages) {
                             uint32_t idx = screen_x + dest_page_top * _width;
-                            _buffer[idx] = (_buffer[idx] & ~cover_top) | (mask_top & cover_top);
+                            _buffer.get()[idx] = (_buffer.get()[idx] & ~cover_top) | (mask_top & cover_top);
                         }
                         if (y_offset > 0 && dest_page_bottom < pages) {
                             uint32_t idx = screen_x + dest_page_bottom * _width;
-                            _buffer[idx] = (_buffer[idx] & ~cover_bottom) | (mask_bottom & cover_bottom);
+                            _buffer.get()[idx] = (_buffer.get()[idx] & ~cover_bottom) | (mask_bottom & cover_bottom);
                         }
                         break;  
                     }  
                     case ADD_UP: {  
                         // Просто наложение (OR)
-                        if (dest_page_top < pages) _buffer[screen_x + dest_page_top * _width] |= mask_top;  
-                        if (y_offset > 0 && dest_page_bottom < pages) _buffer[screen_x + dest_page_bottom * _width] |= mask_bottom;  
+                        if (dest_page_top < pages) _buffer.get()[screen_x + dest_page_top * _width] |= mask_top;  
+                        if (y_offset > 0 && dest_page_bottom < pages) _buffer.get()[screen_x + dest_page_bottom * _width] |= mask_bottom;  
                         break;  
                     }  
                     case INV_AUTO: {  
                         // Инверсия (XOR). Фон инвертируется только там, где есть пиксели символа.
-                        if (dest_page_top < pages) _buffer[screen_x + dest_page_top * _width] ^= mask_top;  
-                        if (y_offset > 0 && dest_page_bottom < pages) _buffer[screen_x + dest_page_bottom * _width] ^= mask_bottom;  
+                        if (dest_page_top < pages) _buffer.get()[screen_x + dest_page_top * _width] ^= mask_top;  
+                        if (y_offset > 0 && dest_page_bottom < pages) _buffer.get()[screen_x + dest_page_bottom * _width] ^= mask_bottom;  
                         break;  
                     }  
                 }
@@ -736,11 +736,11 @@ void SavaOLED_ESP32::drawPrintVert() {
 
                     if (byte_mask) {
                         if (_drawMode == REPLACE) {
-                            _buffer[idx] = (_buffer[idx] & ~byte_mask) | (byte_data & byte_mask);
+                            _buffer.get()[idx] = (_buffer.get()[idx] & ~byte_mask) | (byte_data & byte_mask);
                         } else if (_drawMode == ADD_UP) {
-                            _buffer[idx] |= (byte_data & byte_mask);
+                            _buffer.get()[idx] |= (byte_data & byte_mask);
                         } else if (_drawMode == INV_AUTO) {
-                            _buffer[idx] ^= (byte_data & byte_mask);
+                            _buffer.get()[idx] ^= (byte_data & byte_mask);
                         }
                     }
 
@@ -768,7 +768,7 @@ void SavaOLED_ESP32::display() {
 
 void SavaOLED_ESP32::clear() {
     // Возвращаем на очистку нулями, чтобы видеть результат, а не белый экран
-    memset(_buffer, 0x00, _bufferSize);
+    memset(_buffer.get(), 0x00, _bufferSize);
 }
 
 //****************************************************************************************
@@ -1024,7 +1024,7 @@ void SavaOLED_ESP32::drawBitmap(int16_t x, int16_t y, const uint8_t* bitmap, int
                 // А в REPLACE ноль должен СТИРАТЬ фон.
                 if (mode == REPLACE) {
                     // Ручное стирание пикселя (установка в 0)
-                    _buffer[screen_x + (screen_y / 8) * _width] &= ~(1 << (screen_y % 8));
+                    _buffer.get()[screen_x + (screen_y / 8) * _width] &= ~(1 << (screen_y % 8));
                 }
             }
         }
@@ -1101,8 +1101,8 @@ void SavaOLED_ESP32::_displayPaged() {
     const uint8_t pages = _height / 8;
     for (uint8_t p = 0; p < pages; ++p) {
         _tx_buffer[0] = 0x40; // Управляющий байт для данных
-        memcpy(&_tx_buffer[1], &_buffer[p * _width], _width);
-        esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer, _width + 1, 500);
+        memcpy(&_tx_buffer[1], &_buffer.get()[p * _width], _width);
+        esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer.get(), _width + 1, 500);
         if (ret != ESP_OK) {
             Serial.printf("Error in display(): sending page %u. Code: %s\n", (unsigned)p, esp_err_to_name(ret));
             // Продолжаем попытки отправки остальных страниц
@@ -1121,8 +1121,8 @@ void SavaOLED_ESP32::_displayFullBuffer() {
         return;  
     }  
     _tx_buffer[0] = 0x40; // Управляющий байт для данных  
-    memcpy(&_tx_buffer[1], _buffer, _bufferSize);  
-    esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer, _bufferSize + 1, 1000);  
+    memcpy(&_tx_buffer[1], _buffer.get(), _bufferSize);
+    esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer.get(), _bufferSize + 1, 1000); 
     if (ret != ESP_OK) {  
         Serial.printf("Error in _displayFullBuffer(): %s\n", esp_err_to_name(ret));  
     }  
@@ -1204,13 +1204,13 @@ void SavaOLED_ESP32::_drawPixel(int16_t x, int16_t y, uint8_t mode) { // -- эт
         case ERASE_BORDER:
 		case ADD_UP:
         case REPLACE: // Для одиночного белого пикселя REPLACE и ADD_UP делают одно и то же (ставят 1)
-            _buffer[byte_index] |= (1 << bit_pos);
+            _buffer.get()[byte_index] |= (1 << bit_pos);
             break;
         case INV_AUTO:
-            _buffer[byte_index] ^= (1 << bit_pos);
+            _buffer.get()[byte_index] ^= (1 << bit_pos);
             break;
         case ERASE: // Новый режим: принудительная очистка бита (рисуем черным)
-            _buffer[byte_index] &= ~(1 << bit_pos);
+            _buffer.get()[byte_index] &= ~(1 << bit_pos);
             break;
     }
 }

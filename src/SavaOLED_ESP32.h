@@ -1,10 +1,13 @@
 #ifndef SavaOLED_ESP32_h
 #define SavaOLED_ESP32_h
 
+#include "SavaOLED_types.h"
+#include <memory>
+
 #include <Arduino.h>
 // Подключаем заголовочный файл нового нативного драйвера I2C
 #include "driver/i2c_master.h"
-#include "SavaOLED_types.h"
+
 
 
 struct savaFont {
@@ -456,7 +459,7 @@ private:
     unsigned long _vertLastScrollTime; 					/**< @brief Время (millis) последнего шага вертикального скролла */
     uint8_t _vertScrollSpeed;       					/**< @brief Скорость вертикального скролла (1..10) */
 	
-	uint8_t* _lineBuffer;           					/**< @brief Временный бинарный буфер для рендеринга строки (по колонкам) */
+	std::unique_ptr<uint8_t[]> _lineBuffer;             //uint8_t* _lineBuffer;	/**< @brief Временный бинарный буфер для рендеринга строки (по колонкам) */
     uint16_t _lineBufferWidth;      					/**< @brief Ширина _lineBuffer в колонках */
     uint8_t  _lineBufferHeightPages;					/**< @brief Высота _lineBuffer в страницах (8-строчных блоков) */
     uint16_t _currentLineWidth;     					/**< @brief Фактическая ширина отрисованной строки в _lineBuffer */
@@ -476,14 +479,14 @@ private:
     uint8_t _height;   									/**< @brief Высота дисплея в пикселях */
     uint16_t _bufferSize; 								/**< @brief Размер кадрового буфера в байтах (_width * _height / 8) */
 	
-    uint8_t* _buffer;									/**< @brief Кадровый буфер (формат страниц SSD1306) */
-    uint8_t* _tx_buffer; 								/**< @brief Вспомогательный буфер передачи (включая управляющий байт) */
+    std::unique_ptr<uint8_t[]> _buffer;                 //uint8_t* _buffer;		/**< @brief Кадровый буфер (формат страниц SSD1306) */
+    std::unique_ptr<uint8_t[]> _tx_buffer;              //uint8_t* _tx_buffer;	/**< @brief Вспомогательный буфер передачи (включая управляющий байт) */
 
     bool _inverted;      								/**< @brief Состояние аппаратной инверсии экрана (true = inverted) */
     uint8_t _contrast;   								/**< @brief Текущее значение контраста (0..255) */
 	bool _Buffer;      									/**< @brief Флаг режима отправки буфера (true = целиком, false = постранично) */ 
 
-    uint8_t* _vertBuffer;                               /**< @brief Вертикальный буфер (лента) */        
+    std::unique_ptr<uint8_t[]> _vertBuffer;             //uint8_t* _vertBuffer; /**< @brief Вертикальный буфер (лента) */        
     uint16_t _vertBufferHeight;                         /**< @brief Текущая высота текста в буфере */
     static const uint16_t VERT_BUF_SIZE = 2048;         /**< @brief Размер (хватит на ~500 пикселей высоты при ширине 32px) */
     
