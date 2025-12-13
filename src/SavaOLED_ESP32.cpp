@@ -242,6 +242,10 @@ uint16_t SavaOLED_ESP32::getTextHeight() const {
     return _currentFont->height;
 }
 
+uint16_t SavaOLED_ESP32::getScopeCursor() const {
+    return (_cursorX2 >= 0) ? _cursorX2 : (_width - 1);
+}
+
 //****************************************************************************************
 //--- Публичные функции "Накопления" (Data Accumulation) ---
 // --- Перегруженные функции print, работающие с курсором ---
