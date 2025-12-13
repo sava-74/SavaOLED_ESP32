@@ -7,7 +7,7 @@
 #include "SavaOLED_types.h"
 
 
-struct Font {
+struct savaFont {
     const uint8_t* data;       // Указатель на массив данных (Ширина + Байты)
     const uint16_t* offsets;   // Указатель на таблицу смещений (Где искать символ)
     uint8_t height;            // Высота символа в пикселях
@@ -16,14 +16,14 @@ struct Font {
 
 struct TextSegment {
     const char* text;          // Буфер для фрагмента текста (не владеет памятью)
-    const Font* font;          // Указатель на шрифт для этого фрагмента
+    const savaFont* fontPtr;          // Указатель на шрифт для этого фрагмента
 };
 
 struct DisplayListItem {
     const uint8_t* font_data; // Указатель на начало данных символа
     uint8_t char_width;       // Ширина этого символа в байтах/колонках
     uint8_t mode;             // Режим заливки
-	const Font* font;		  // Указатель на шрифт для этого фрагмента
+	const savaFont* fontPtr;		  // Указатель на шрифт для этого фрагмента
 };
 
 class SavaOLED_ESP32 {
@@ -201,9 +201,9 @@ public:
 
     /**
     * @brief Установить текущий шрифт для последующих операций print.
-    * @param font - ссылка на структуру `Font`.
+    * @param fontPtr - ссылка на структуру `fontPtr`.
     */
-	void setFont(const Font &font);
+	void font(const savaFont &fontPtr);
 	
     /**
     * @brief Установить режим отрисовки для текста и примитивов.
@@ -393,11 +393,11 @@ private:
 	void _sendCommands(const uint8_t* cmds, uint8_t len);
 	/**
     * @brief Получить индекс символа в шрифте по коду символа.
-    * @param font - указатель на используемый шрифт.
+    * @param fontPtr - указатель на используемый шрифт.
     * @param char_code - код символа (может быть CP1251 для кириллицы).
     * @return индекс в таблице шрифта или 0xFFFF если символ не найден.
     */
-	uint16_t _getCharIndex(const Font* font, uint16_t char_code);
+	uint16_t _getCharIndex(const savaFont* fontPtr, uint16_t char_code);
 	
 	/**
     * @brief Внутренняя функция для отрисовки пикселя с разными режимами.
@@ -429,7 +429,7 @@ private:
     i2c_master_bus_handle_t _bus_handle; 				/**< @brief Дескриптор шины I2C */
     i2c_master_dev_handle_t _dev_handle; 				/**< @brief Дескриптор устройства на шине */
 
-	const Font* _currentFont; 							/**< @brief Указатель на текущий выбранный шрифт */
+	const savaFont* _currentFont; 							/**< @brief Указатель на текущий выбранный шрифт */
 		
 	int16_t _cursorX; 									/**< @brief Текущая X позиция курсора (визуальная) */	
 	int16_t _cursorY; 									/**< @brief Текущая Y позиция курсора (визуальная) */		

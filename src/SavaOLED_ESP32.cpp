@@ -136,8 +136,8 @@ void SavaOLED_ESP32::setAddress(uint8_t address){
 	_address = address;
 }
 
-void SavaOLED_ESP32::setFont(const Font &font) {
-    _currentFont = &font;
+void SavaOLED_ESP32::font(const savaFont &fontPtr) {
+    _currentFont = &fontPtr;
 }
 
 
@@ -258,7 +258,7 @@ void SavaOLED_ESP32::print(const char* text) {
 
     // Создаем и заполняем новый сегмент
     _segments[_segmentCount].text = &_textBuffer[_textBufferPos];
-    _segments[_segmentCount].font = _currentFont;
+    _segments[_segmentCount].fontPtr = _currentFont;
     //_segments[_segmentCount].drawMode = _drawMode;
 
     // Сдвигаем позицию в буфере и увеличиваем счетчик сегментов
@@ -349,8 +349,8 @@ void SavaOLED_ESP32::drawPrint() {
         uint8_t max_line_pages = 1;
         for (uint8_t s = 0; s < _segmentCount; ++s) {
             const auto& segment = _segments[s];
-            if (segment.font) {
-                uint8_t pages_per_char = (segment.font->height + 7) / 8;
+            if (segment.fontPtr) {
+                uint8_t pages_per_char = (segment.fontPtr->height + 7) / 8;
                 if (pages_per_char > max_line_pages) {
                     max_line_pages = pages_per_char;
                 }
@@ -367,11 +367,11 @@ void SavaOLED_ESP32::drawPrint() {
         // 1.3 Рисуем сегменты
         for (uint8_t s = 0; s < _segmentCount; ++s) {
             const auto& segment = _segments[s];
-            const Font* font = segment.font;
+            const savaFont* fontPtr = segment.fontPtr;
             const char* text = segment.text;
 
-            if (!font || !text) continue;
-            uint8_t pages_per_char = (font->height + 7) / 8;
+            if (!fontPtr || !text) continue;
+            uint8_t pages_per_char = (fontPtr->height + 7) / 8;
 
             int i = 0;
             while (text[i] != '\0' && current_x < _lineBufferWidth) {
@@ -385,18 +385,18 @@ void SavaOLED_ESP32::drawPrint() {
                 }
                 
                 // Получаем индекс символа (0..159)
-                uint16_t index = _getCharIndex(font, char_code);
+                uint16_t index = _getCharIndex(fontPtr, char_code);
                 
                 if (index != 0xFFFF) {
                     // --- Читаем через Offsets ---
                     // 1. Находим начало данных символа
-                    uint16_t glyph_data_start = font->offsets[index];
+                    uint16_t glyph_data_start = fontPtr->offsets[index];
                     
                     // 2. Первый байт - это ШИРИНА символа
-                    uint8_t char_width = font->data[glyph_data_start];
+                    uint8_t char_width = fontPtr->data[glyph_data_start];
                     
                     // 3. Указатель на саму графику (пропускаем байт ширины)
-                    const uint8_t* glyph_pixels = &font->data[glyph_data_start + 1];
+                    const uint8_t* glyph_pixels = &fontPtr->data[glyph_data_start + 1];
 
                     // 4. Отрисовка столбиков
                     for (uint8_t col = 0; col < char_width; col++) {
@@ -548,9 +548,9 @@ void SavaOLED_ESP32::drawPrintVert() {
 
     for (uint8_t s = 0; s < _segmentCount; ++s) {
         const auto& segment = _segments[s];
-        if (!segment.font || !segment.text) continue;
-        const Font* font = segment.font;
-        uint8_t font_h_pixels = font->height;
+        if (!segment.fontPtr || !segment.text) continue;
+        const savaFont* fontPtr = segment.fontPtr;
+        uint8_t font_h_pixels = fontPtr->height;
         int i = 0;
         while (segment.text[i] != '\0' && layout_count < 128) {
             uint16_t char_code = (uint8_t)segment.text[i];
@@ -560,10 +560,10 @@ void SavaOLED_ESP32::drawPrintVert() {
                 char_code = utf8_to_cp1251((uint8_t)segment.text[i], (uint8_t)segment.text[i + 1]);
                 i += 2;
             }
-            uint16_t index = _getCharIndex(font, char_code);
+            uint16_t index = _getCharIndex(fontPtr, char_code);
             if (index == 0xFFFF) continue;
 
-            const uint8_t* char_ptr = &font->data[font->offsets[index]];
+            const uint8_t* char_ptr = &fontPtr->data[fontPtr->offsets[index]];
             uint8_t raw_width = *char_ptr;
             const uint8_t* pixels = char_ptr + 1;
 
@@ -673,9 +673,9 @@ void SavaOLED_ESP32::drawPrintVert() {
                 continue;
             }
 
-            const Font* font = _segments[0].font;
-            const uint8_t* pixels = &font->data[font->offsets[l.index]] + 1;
-            uint8_t pages_per_char = (font->height + 7) / 8;
+            const savaFont* fontPtr = _segments[0].fontPtr;
+            const uint8_t* pixels = &fontPtr->data[fontPtr->offsets[l.index]] + 1;
+            uint8_t pages_per_char = (fontPtr->height + 7) / 8;
 
             int16_t base_page_y = (screen_y >= 0) ? (screen_y / 8) : ((screen_y - 7) / 8);
             uint8_t y_bit_shift = (screen_y >= 0) ? (screen_y % 8) : (8 + (screen_y % 8));
@@ -1149,11 +1149,11 @@ void SavaOLED_ESP32::_sendCommands(const uint8_t* cmds, uint8_t len) {
     }
 }
 
-uint16_t SavaOLED_ESP32::_getCharIndex(const Font* font, uint16_t char_code) {
-    if (!font) return 0xFFFF;
+uint16_t SavaOLED_ESP32::_getCharIndex(const savaFont* fontPtr, uint16_t char_code) {
+    if (!fontPtr) return 0xFFFF;
 
     // --- Тип 0: Numbers (Цифры и спецсимволы) ---
-    if (font->font_index == 0) {
+    if (fontPtr->font_index == 0) {
         if (char_code >= '0' && char_code <= '9') return char_code - '0' + 1; // '0' -> 1
         if (char_code == '.') return 0;
         if (char_code == ':') return 11;
@@ -1168,7 +1168,7 @@ uint16_t SavaOLED_ESP32::_getCharIndex(const Font* font, uint16_t char_code) {
     }
 
     // --- Тип 1: General Hybrid (Сквозной: ASCII + Cyrillic) ---
-    if (font->font_index == 1) {
+    if (fontPtr->font_index == 1) {
         // ASCII (0x20..0x7E) -> Индексы 0..94
         if (char_code >= 0x20 && char_code <= 0x7E) {
             return char_code - 0x20;

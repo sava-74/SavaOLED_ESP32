@@ -186,7 +186,7 @@ const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
 };
 
 // Новый тип шрифта. Height=8, Index=1
-const Font SavaFont_ilya_Pro_8px = { 
+const savaFont SavaFont_ilya_Pro_8px = { 
     (const uint8_t*)SavaFont_ilya_Pro_8px_Data, 
     (const uint16_t*)SavaFont_ilya_Pro_8px_Offsets,
     8, // Height

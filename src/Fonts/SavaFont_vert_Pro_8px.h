@@ -1,6 +1,6 @@
 #ifndef SAVAFONT_VERT_PRO_8PX_H
 #define SAVAFONT_VERT_PRO_8PX_H
-//#include "SavaOLED_ESP32.h"
+
 
 // Таблица смещений (161 символов)
 const uint16_t SavaFont_vert_Pro_8px_Offsets[] = {
@@ -20,7 +20,7 @@ const uint16_t SavaFont_vert_Pro_8px_Offsets[] = {
     1097, 1103, 1109, 1115, 1123, 
 };
 
-// Массив данных: [Ширина] [Page 0...] [Page 1...] ...
+
 const uint8_t SavaFont_vert_Pro_8px_Data[] = {
     0x03, 0x00, 0x00, 0x00, // ' ' (idx 0)
     0x07, 0x01, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, // '!' (idx 1)
@@ -186,7 +186,7 @@ const uint8_t SavaFont_vert_Pro_8px_Data[] = {
 };
 
 // Новый тип шрифта. Height=8, Index=1
-const Font SavaFont_vert_Pro_8px = { 
+const savaFont SavaFont_vert_Pro_8px = { 
     (const uint8_t*)SavaFont_vert_Pro_8px_Data, 
     (const uint16_t*)SavaFont_vert_Pro_8px_Offsets,
     8, // Height

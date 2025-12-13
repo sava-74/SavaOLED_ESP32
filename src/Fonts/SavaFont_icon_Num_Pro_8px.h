@@ -1,14 +1,10 @@
 #ifndef SAVAFONT_ICON_NUM_PRO_8PX_H
 #define SAVAFONT_ICON_NUM_PRO_8PX_H
-//#include "SavaOLED_ESP32.h"
-
-// Таблица смещений (18 символов)
 const uint16_t SavaFont_icon_Num_Pro_8px_Offsets[] = {
     0  , 6  , 10 , 15 , 20 , 25 , 31 , 36 , 40 , 46 , 56 , 66 , 
     76 , 86 , 88 , 92 , 98 , 106, 
 };
 
-// Массив данных: [Ширина] [Page 0...] [Page 1...] ...
 const uint8_t SavaFont_icon_Num_Pro_8px_Data[] = {
     0x05, 0x80, 0xC0, 0xE0, 0xC0, 0x80, // '.' (idx 0)
     0x03, 0x06, 0x09, 0x06, // '0' (idx 1)
@@ -30,8 +26,7 @@ const uint8_t SavaFont_icon_Num_Pro_8px_Data[] = {
     0x09, 0x80, 0x00, 0xC0, 0x00, 0xF0, 0x00, 0xFC, 0x00, 0xFF, // ' ' (idx 17)
 };
 
-// Новый тип шрифта. Height=8, Index=0
-const Font SavaFont_icon_Num_Pro_8px = { 
+const savaFont SavaFont_icon_Num_Pro_8px = { 
     (const uint8_t*)SavaFont_icon_Num_Pro_8px_Data, 
     (const uint16_t*)SavaFont_icon_Num_Pro_8px_Offsets,
     8, // Height

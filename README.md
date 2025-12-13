@@ -52,7 +52,7 @@ SavaOLED_ESP32 oled(128, 64, I2C_NUM_0);
 
 void setup() {
  oled.init();           // 400kHz, SDA=21, SCL=22
- oled.clearBuffer();
+ oled.clear();
 }
 📌 По умолчанию:
 
@@ -92,21 +92,21 @@ void setup() {
 
 ---
 
-🖌️ setFont()
+🖌️ font()
 
-### void setFont(const Font &font)
+### void font(const savaFont &fontPtr)
 
 * Устанавливает шрифт для последующих print().
 
 | Параметр | Тип | Описание |
 |---------|-----|--------|
-| font | const Font& | Ссылка на шрифт Fonts\SavaFont_5x8.h  |
+| fontPtr | const savaFont& | Ссылка на шрифт Fonts\SavaFont_5x8.h  |
 
 ---
 
-📏 setCharSpacing()
+📏 charSpacing()
 
-### void setCharSpacing(uint8_t spacing)
+### void charSpacing(uint8_t spacing)
 
 Задаёт промежуток между символами.
 
@@ -116,9 +116,9 @@ void setup() {
 
 ---
 
-🎨 setDrawMode()
+🎨 drawMode()
 
-### void setDrawMode(uint8_t mode = REPLACE)
+### void drawMode(uint8_t mode = REPLACE)
 
 Режим отрисовки пикселей.
 
@@ -131,7 +131,7 @@ void setup() {
 | REPLACE | очистит и поверх нарисует (рекомендуется) |
 | ADD_UP | Наложение (OR), прозрачный фон |
 | INV_AUTO | Авто-Инверсия (XOR) |
-|ERASE | Стирание под собой (только примитивы) |
+| ERASE | Стирание под собой (только примитивы) |
 | ERASE_BORDER | Стирание + белый контур (только примитивы) |
   
   ---
@@ -162,7 +162,7 @@ void setup() {
 ```bash
 int hour = 5;
 int min = 8;
-oled.setCursor(0,0,StrCentr);
+oled.cursor(0,0,StrCentr);
 oled.print("Текущее время");
 oled.print(hour, 2);
 oled.print(":");
@@ -187,7 +187,7 @@ oled.drawPrint();
 ```bash
 
 float val = 3,14;
-oled.setCursor(0,0,StrCentr);
+oled.cursor(0,0,StrCentr);
 oled.print(val, 2, 5);
 oled.drawPrint();
 //вывод на экран "03,14"
@@ -208,7 +208,7 @@ oled.drawPrint();
 
 📍 Управление курсором
 
-#### void setCursor(int16_t x, int16_t y, uint8_t align = StrLeft, int16_t x2 = -1)
+#### void cursor(int16_t x, int16_t y, uint8_t align = StrLeft, int16_t x2 = -1)
 
 | Параметр | Тип | Описание |
 |---------|-----|--------|
@@ -292,25 +292,25 @@ void bezier(...), drawPeak(...)
 
 | Функция | Назначение |
 |--------|----------|
-| setContrast(value) | Контраст (0..255) |
-| setPower(mode) | Вкл/выкл дисплея |
+| Contrast(value) | Контраст (0..255) |
+| Power(mode) | Вкл/выкл дисплея |
 | flipH(mode), flipV(mode) | Отражение экрана |
 | invertDisplay(mode) | Инверсия цветов |
-| setRotation(rotate180) | Поворот на 180° |
+| Rotation(rotate180) | Поворот на 180° |
 
 * ### 🌀 Скроллинг
   
 | Функция | Назначение |
 |--------|----------|
-| setScroll(enabled) | Вкл/выкл скроллинг |
-| setScrollSpeed(speed, loop) | Скорость (1–10) |
-| setScrollSpeedVert(speed) | Вертикальная скорость (1–10)|
+| Scroll(enabled) | Вкл/выкл скроллинг |
+| ScrollSpeed(speed, loop) | Скорость (1–10) |
+| ScrollSpeedVert(speed) | Вертикальная скорость (1–10)|
 
 ---
 
 * ### 📦 Режим буферизации
 
-### void setBuffer(bool enabled)
+### void Buffer(bool enabled)
 
 | Параметр | Тип | Описание |
 |---------|-----|--------|
@@ -334,11 +334,11 @@ oled.display();
 
 ```bash
 oled.clear();
-oled.setScrollSpeed(5, true);  // в void setup
-oled.setCursor(0, 20, StrScroll);
-oled.setScroll(true);
-oled.setDrawMode(INV_AUTO);
-oled.setCharSpacing(1);
+oled.scrollSpeed(5, true);  // в void up
+oled.cursor(0, 20, StrScroll);
+oled.scroll(true);
+oled.drawMode(INV_AUTO);
+oled.charSpacing(1);
 oled.print("Бегущая строка на OLED! ");
 oled.drawPrint();
 oled.display();
@@ -348,8 +348,8 @@ oled.display();
 
 ```bash
 oled.clear();
-oled.setFont(font_Vert9);
-oled.setCursor(10, 0);
+oled.font(font_Vert9);
+oled.cursor(10, 0);
 oled.print("Temp: ");
 oled.print(25.5);
 oled.drawPrintVert();
