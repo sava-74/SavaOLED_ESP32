@@ -753,7 +753,11 @@ void SavaOLED_ESP32::drawPrintVert() {
     }
 }
 
-
+void SavaOLED_ESP32::fillScreen(uint8_t pattern) {
+    // Используем memset для быстрой заливки всего массива одним байтом
+    // _buffer.get() используется, так как у нас std::unique_ptr
+    memset(_buffer.get(), pattern, _bufferSize);
+}
 
 
 

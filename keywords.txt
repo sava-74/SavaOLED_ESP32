@@ -1,21 +1,77 @@
-# SavaOLED_ESP32 Keywords for Arduino IDE Syntax Highlighting
+#######################################
+# Syntax Coloring Map for SavaOLED_ESP32
+#######################################
 
 #######################################
-# Class Name (KEYWORD1)
+# Datatypes (Classes) - KEYWORD1
 #######################################
-SavaOLED_ESP32	KEYWORD1
+
+SavaOLED_ESP32  KEYWORD1
+savaFont    KEYWORD1
+TextSegment KEYWORD1
+DisplayListItem KEYWORD1
 
 #######################################
-# Public Methods (KEYWORD2)
+# Methods (Functions) - KEYWORD2
 #######################################
-init			KEYWORD2
-dot				KEYWORD2
-display			KEYWORD2
-clearBuffer		KEYWORD2
+
+init	KEYWORD2
+setAddress	KEYWORD2
+dot	KEYWORD2
+line    KEYWORD2
+hLine   KEYWORD2
+vLine   KEYWORD2
+rect    KEYWORD2
+rectR   KEYWORD2
+circle  KEYWORD2
+drawBitmap  KEYWORD2
+fillScreen  KEYWORD2
+bezier  KEYWORD2
+drawPeak    KEYWORD2
+display KEYWORD2
+clear   KEYWORD2
+font    KEYWORD2
+drawMode    KEYWORD2
+charSpacing KEYWORD2
+scroll  KEYWORD2
+scrollSpeed KEYWORD2
+scrollSpeedVert KEYWORD2
+setBuffer   KEYWORD2
+print   KEYWORD2
+drawPrint   KEYWORD2
+drawPrintVert   KEYWORD2
+cursor  KEYWORD2
+getCursorX  KEYWORD2
+getCursorY  KEYWORD2
+getTextWidth    KEYWORD2
+getTextHeight   KEYWORD2
+getScopeCursor  KEYWORD2
+contrast    KEYWORD2
+power   KEYWORD2
+invertDisplay   KEYWORD2
+flipH   KEYWORD2
+flipV   KEYWORD2
+rotation    KEYWORD2
 
 #######################################
-# Constants (LITERAL1)
+# Constants - LITERAL1
 #######################################
-OLED_WIDTH		LITERAL1
-OLED_HEIGHT		LITERAL1
-OLED_BUFFER_SIZE	LITERAL1
+
+REPLACE LITERAL1
+ADD_UP  LITERAL1
+INV_AUTO    LITERAL1
+ERASE   LITERAL1
+ERASE_BORDER    LITERAL1
+
+FILL    LITERAL1
+NO_FILL LITERAL1
+
+StrLeft LITERAL1
+StrCenter   LITERAL1
+StrRight    LITERAL1
+StrScroll   LITERAL1
+StrUp   LITERAL1
+StrDown LITERAL1
+
+FULL_FRAME  LITERAL1
+PAGES_FRAME LITERAL1

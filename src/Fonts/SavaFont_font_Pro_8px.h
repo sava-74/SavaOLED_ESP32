@@ -1,9 +1,6 @@
-#ifndef SAVAFONT_ILYA_PRO_8PX_H
-#define SAVAFONT_ILYA_PRO_8PX_H
-//#include "SavaOLED_ESP32.h"
-
-// Таблица смещений (161 символов)
-const uint16_t SavaFont_ilya_Pro_8px_Offsets[] = {
+#ifndef SAVAFONT_FONT_PRO_8PX_H
+#define SAVAFONT_FONT_PRO_8PX_H
+const uint16_t SavaFont_font_Pro_8px_Offsets[] = {
     0  , 4  , 6  , 10 , 16 , 22 , 28 , 34 , 37 , 41 , 45 , 51 , 
     57 , 60 , 65 , 67 , 73 , 79 , 83 , 89 , 95 , 101, 107, 113, 
     119, 125, 131, 133, 136, 140, 145, 149, 155, 161, 167, 173, 
@@ -12,16 +9,15 @@ const uint16_t SavaFont_ilya_Pro_8px_Offsets[] = {
     322, 329, 333, 339, 344, 347, 353, 358, 364, 369, 375, 380, 
     386, 391, 393, 397, 402, 404, 410, 415, 421, 427, 433, 438, 
     443, 448, 453, 459, 465, 471, 476, 481, 485, 487, 491, 497, 
-    503, 509, 515, 520, 527, 533, 541, 547, 553, 559, 565, 571, 
-    579, 585, 591, 597, 603, 609, 615, 621, 629, 635, 642, 648, 
-    656, 665, 672, 680, 686, 692, 700, 706, 712, 718, 724, 730, 
+    503, 509, 515, 521, 528, 534, 542, 548, 554, 560, 566, 572, 
+    580, 586, 592, 598, 604, 610, 616, 622, 630, 636, 643, 649, 
+    657, 666, 673, 681, 687, 693, 701, 707, 713, 719, 725, 730, 
     737, 743, 749, 755, 761, 767, 772, 778, 784, 790, 796, 802, 
     808, 814, 820, 826, 834, 840, 847, 853, 859, 866, 873, 881, 
     887, 893, 901, 907, 913, 
 };
 
-// Массив данных: [Ширина] [Page 0...] [Page 1...] ...
-const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
+const uint8_t SavaFont_font_Pro_8px_Data[] = {
     0x03, 0x00, 0x00, 0x00, // ' ' (idx 0)
     0x01, 0x4F, // '!' (idx 1)
     0x03, 0x03, 0x00, 0x03, // '\"' (idx 2)
@@ -105,7 +101,7 @@ const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
     0x05, 0x7C, 0x14, 0x14, 0x14, 0x08, // 'p' (idx 80)
     0x05, 0x08, 0x14, 0x14, 0x14, 0x7C, // 'q' (idx 81)
     0x04, 0x7C, 0x08, 0x04, 0x08, // 'r' (idx 82)
-    0x04, 0x48, 0x54, 0x54, 0x20, // 's' (idx 83)
+    0x04, 0x48, 0x54, 0x54, 0x24, // 's' (idx 83)
     0x04, 0x04, 0x3F, 0x44, 0x20, // 't' (idx 84)
     0x04, 0x3C, 0x40, 0x40, 0x7C, // 'u' (idx 85)
     0x05, 0x1C, 0x20, 0x40, 0x20, 0x1C, // 'v' (idx 86)
@@ -120,7 +116,7 @@ const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
     0x05, 0x7E, 0x11, 0x11, 0x11, 0x7E, // 'А' (idx 95)
     0x05, 0x7F, 0x49, 0x49, 0x49, 0x33, // 'Б' (idx 96)
     0x05, 0x7F, 0x49, 0x49, 0x49, 0x36, // 'В' (idx 97)
-    0x04, 0x7F, 0x01, 0x01, 0x01, // 'Г' (idx 98)
+    0x05, 0x7F, 0x01, 0x01, 0x01, 0x03, // 'Г' (idx 98)
     0x06, 0x60, 0x3E, 0x21, 0x21, 0x3F, 0x60, // 'Д' (idx 99)
     0x05, 0x7F, 0x49, 0x49, 0x49, 0x41, // 'Е' (idx 100)
     0x07, 0x63, 0x14, 0x08, 0x7F, 0x08, 0x14, 0x63, // 'Ж' (idx 101)
@@ -152,7 +148,7 @@ const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
     0x05, 0x20, 0x54, 0x54, 0x54, 0x78, // 'а' (idx 127)
     0x05, 0x3C, 0x4A, 0x4A, 0x49, 0x31, // 'б' (idx 128)
     0x05, 0x7C, 0x54, 0x54, 0x54, 0x28, // 'в' (idx 129)
-    0x05, 0x7C, 0x04, 0x04, 0x04, 0x0C, // 'г' (idx 130)
+    0x04, 0x7C, 0x04, 0x04, 0x04, // 'г' (idx 130)
     0x06, 0xC0, 0x78, 0x44, 0x44, 0x7C, 0xC0, // 'д' (idx 131)
     0x05, 0x38, 0x54, 0x54, 0x54, 0x18, // 'е' (idx 132)
     0x05, 0x6C, 0x10, 0x7C, 0x10, 0x6C, // 'ж' (idx 133)
@@ -185,10 +181,9 @@ const uint8_t SavaFont_ilya_Pro_8px_Data[] = {
     0x05, 0x38, 0x55, 0x54, 0x55, 0x08, // 'ё' (idx 160)
 };
 
-// Новый тип шрифта. Height=8, Index=1
-const savaFont SavaFont_ilya_Pro_8px = { 
-    (const uint8_t*)SavaFont_ilya_Pro_8px_Data, 
-    (const uint16_t*)SavaFont_ilya_Pro_8px_Offsets,
+const savaFont SavaFont_font_Pro_8px = { 
+    (const uint8_t*)SavaFont_font_Pro_8px_Data, 
+    (const uint16_t*)SavaFont_font_Pro_8px_Offsets,
     8, // Height
     1  // Type Index
 };
