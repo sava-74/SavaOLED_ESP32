@@ -75,10 +75,11 @@ SavaOLED_ESP32::SavaOLED_ESP32(uint8_t width, uint8_t height, i2c_port_t port) {
     _currentLineWidth = 0;
     _segmentCount = 0;
     _textBufferPos = 0;
-    _lineChanged = false;	
+    _lineChanged = false;
 
     _inverted = false;
     _contrast = 0xCF; // совпадает с init sequence
+    _initialized = false;
 }
 
 SavaOLED_ESP32::~SavaOLED_ESP32() {
@@ -105,31 +106,89 @@ SavaOLED_ESP32::~SavaOLED_ESP32() {
 //****************************************************************************************
 
 void SavaOLED_ESP32::init(uint32_t freq, int8_t _sda, int8_t _scl) {
+    _initialized = false;
+    esp_err_t ret;
+
+    // ============================================================
+    // Попытка 1: Создание I2C шины
+    // ============================================================
     i2c_master_bus_config_t bus_config;
-    memset(&bus_config, 0, sizeof(i2c_master_bus_config_t)); // Обнуляем структуру для безопасности
+    memset(&bus_config, 0, sizeof(i2c_master_bus_config_t));
     bus_config.i2c_port = _port;
     bus_config.sda_io_num = (gpio_num_t)_sda;
     bus_config.scl_io_num = (gpio_num_t)_scl;
     bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
     bus_config.glitch_ignore_cnt = 7;
     bus_config.flags.enable_internal_pullup = true;
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &_bus_handle));
 
+    ret = i2c_new_master_bus(&bus_config, &_bus_handle);
+    if (ret != ESP_OK) {
+        OLED_ERROR("Failed to create I2C bus: %s (0x%X)", esp_err_to_name(ret), ret);
+        Serial.printf("[SavaOLED ERROR] I2C bus creation failed: %s\n", esp_err_to_name(ret));
+        _bus_handle = NULL;
+        _dev_handle = NULL;
+        return;
+    }
+    OLED_LOG("I2C bus created on port %d", _port);
+
+    // ============================================================
+    // Попытка 2: Добавление устройства на шину (с 2 попытками)
+    // ============================================================
     i2c_device_config_t dev_config = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = _address,
         .scl_speed_hz = freq,
     };
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(_bus_handle, &dev_config, &_dev_handle));
 
-	// Сначала отправляем статическую часть команд
+    const uint8_t MAX_RETRIES = 2;
+    bool device_added = false;
+
+    for (uint8_t attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        ret = i2c_master_bus_add_device(_bus_handle, &dev_config, &_dev_handle);
+
+        if (ret == ESP_OK) {
+            device_added = true;
+            OLED_LOG("I2C device 0x%02X added on attempt %d", _address, attempt);
+            break;
+        }
+
+        OLED_WARN("Attempt %d/%d: Failed to add device 0x%02X: %s",
+                  attempt, MAX_RETRIES, _address, esp_err_to_name(ret));
+
+        if (attempt < MAX_RETRIES) {
+            delay(50);
+        }
+    }
+
+    if (!device_added) {
+        OLED_ERROR("Device 0x%02X not responding after %d attempts", _address, MAX_RETRIES);
+        Serial.printf("[SavaOLED ERROR] No device found at 0x%02X on I2C bus\n", _address);
+
+        if (_bus_handle) {
+            i2c_del_master_bus(_bus_handle);
+            _bus_handle = NULL;
+        }
+        _dev_handle = NULL;
+        return;
+    }
+
+    // ============================================================
+    // Инициализация дисплея
+    // ============================================================
     _sendCommands(ssd1306_init_sequence, sizeof(ssd1306_init_sequence));
-	// Теперь отдельно формируем и отправляем команду, зависящую от высоты
+
     uint8_t mux_ratio_cmd[] = {OLED_SET_MUX_RATIO, (uint8_t)(_height - 1)};
     _sendCommands(mux_ratio_cmd, sizeof(mux_ratio_cmd));
-    
+
     clear();
     display();
+
+    // ============================================================
+    // Успех!
+    // ============================================================
+    _initialized = true;
+    OLED_LOG("OLED initialized successfully (%dx%d @ %lu Hz)", _width, _height, freq);
+    Serial.printf("[SavaOLED] Display ready: %dx%d, I2C @ %lu Hz\n", _width, _height, freq);
 }
 
 void SavaOLED_ESP32::setAddress(uint8_t address){
@@ -246,19 +305,32 @@ uint16_t SavaOLED_ESP32::getScopeCursor() const {
     return (_cursorX2 >= 0) ? _cursorX2 : (_width - 1);
 }
 
+bool SavaOLED_ESP32::isReady() const {
+    return _initialized && (_dev_handle != NULL);
+}
+
 //****************************************************************************************
 //--- Публичные функции "Накопления" (Data Accumulation) ---
 // --- Перегруженные функции print, работающие с курсором ---
 // --- Основная функция print для const char* ---
 //****************************************************************************************
 void SavaOLED_ESP32::print(const char* text) {
-    if (_segmentCount >= MAX_SEGMENTS) return; // Достигнут лимит сегментов
+    if (_segmentCount >= MAX_SEGMENTS) {
+        OLED_ERROR("Segment overflow! Max %d segments per line", MAX_SEGMENTS);
+        return;
+    }
 
     size_t text_len = strlen(text);
-    if (_textBufferPos + text_len + 1 > TEXT_BUFFER_SIZE) return; // Недостаточно места в общем буфере
+    if (_textBufferPos + text_len + 1 > TEXT_BUFFER_SIZE) {
+        OLED_ERROR("Text buffer overflow! Pos: %zu, Need: %zu, Max: %zu",
+                   _textBufferPos, text_len, TEXT_BUFFER_SIZE);
+        return;
+    }
 
-    // Копируем текст в общий буфер
-    strcpy(&_textBuffer[_textBufferPos], text);
+    // Безопасное копирование текста в общий буфер
+    size_t available_space = TEXT_BUFFER_SIZE - _textBufferPos - 1;
+    strncpy(&_textBuffer[_textBufferPos], text, available_space);
+    _textBuffer[TEXT_BUFFER_SIZE - 1] = '\0';
 
     // Создаем и заполняем новый сегмент
     _segments[_segmentCount].text = &_textBuffer[_textBufferPos];
@@ -761,12 +833,17 @@ void SavaOLED_ESP32::fillScreen(uint8_t pattern) {
 
 
 
-void SavaOLED_ESP32::display() { 
-    if (_Buffer) { 
-        _displayFullBuffer(); 
-    } else { 
-        _displayPaged(); 
-    } 
+void SavaOLED_ESP32::display() {
+    if (!_initialized) {
+        OLED_WARN("display() called but OLED not initialized");
+        return;
+    }
+
+    if (_Buffer) {
+        _displayFullBuffer();
+    } else {
+        _displayPaged();
+    }
 }
 
 
@@ -1099,7 +1176,7 @@ void SavaOLED_ESP32::_displayPaged() {
     };
     _sendCommands(display_cmds, sizeof(display_cmds));
     if (!_dev_handle) {
-        Serial.println("display(): device not initialized");
+        OLED_ERROR("_displayPaged: device not initialized");
         return;
     }
     const uint8_t pages = _height / 8;
@@ -1108,8 +1185,7 @@ void SavaOLED_ESP32::_displayPaged() {
         memcpy(&_tx_buffer[1], &_buffer.get()[p * _width], _width);
         esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer.get(), _width + 1, 500);
         if (ret != ESP_OK) {
-            Serial.printf("Error in display(): sending page %u. Code: %s\n", (unsigned)p, esp_err_to_name(ret));
-            // Продолжаем попытки отправки остальных страниц
+            OLED_ERROR("Page %u transmit failed: %s (0x%X)", (unsigned)p, esp_err_to_name(ret), ret);
         }
     }
 }
@@ -1119,29 +1195,29 @@ void SavaOLED_ESP32::_displayFullBuffer() {
         OLED_COLUMN_ADDR, 0, (uint8_t)(_width - 1),  
         OLED_PAGE_ADDR, 0, (uint8_t)((_height / 8) - 1)  
     };  
-    _sendCommands(display_cmds, sizeof(display_cmds));  
-    if (!_dev_handle) {  
-        Serial.println("_displayFullBuffer(): device not initialized");  
-        return;  
+    _sendCommands(display_cmds, sizeof(display_cmds));
+    if (!_dev_handle) {
+        OLED_ERROR("_displayFullBuffer: device not initialized");
+        return;
     }  
     _tx_buffer[0] = 0x40; // Управляющий байт для данных  
     memcpy(&_tx_buffer[1], _buffer.get(), _bufferSize);
-    esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer.get(), _bufferSize + 1, 1000); 
-    if (ret != ESP_OK) {  
-        Serial.printf("Error in _displayFullBuffer(): %s\n", esp_err_to_name(ret));  
+    esp_err_t ret = i2c_master_transmit(_dev_handle, _tx_buffer.get(), _bufferSize + 1, 1000);
+    if (ret != ESP_OK) {
+        OLED_ERROR("Full buffer transmit failed: %s (0x%X)", esp_err_to_name(ret), ret);
     }  
 }
 
 void SavaOLED_ESP32::_sendCommands(const uint8_t* cmds, uint8_t len) {
     if (!_dev_handle) {
-        Serial.println("_sendCommands(): device not initialized");
+        OLED_ERROR("_sendCommands: device handle is NULL");
         return;
     }
     if (len == 0) return;
 
     constexpr size_t MAX_CMD_LEN = 32;
     if (len > MAX_CMD_LEN) {
-        Serial.println("_sendCommands(): command length too large");
+        OLED_ERROR("_sendCommands: command too large (%d bytes)", len);
         return;
     }
 
@@ -1153,7 +1229,7 @@ void SavaOLED_ESP32::_sendCommands(const uint8_t* cmds, uint8_t len) {
     // Отправляем весь буфер (управляющий байт + все команды) за одну транзакцию
     esp_err_t ret = i2c_master_transmit(_dev_handle, cmd_buffer, len + 1, 100);
     if (ret != ESP_OK) {
-        Serial.printf("Error sending commands. Code: %s\n", esp_err_to_name(ret));
+        OLED_ERROR("Failed to send %d commands: %s (0x%X)", len, esp_err_to_name(ret), ret);
     }
 }
 

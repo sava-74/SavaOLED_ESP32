@@ -8,6 +8,21 @@
 // Подключаем заголовочный файл нового нативного драйвера I2C
 #include "driver/i2c_master.h"
 
+// ============================================================
+// DEBUG LOGGING SYSTEM
+// ============================================================
+// Для включения логов добавьте в скетч ПЕРЕД #include:
+// #define SAVAOLED_DEBUG
+#ifdef SAVAOLED_DEBUG
+    #define OLED_LOG(fmt, ...)   Serial.printf("[SavaOLED] " fmt "\n", ##__VA_ARGS__)
+    #define OLED_ERROR(fmt, ...) Serial.printf("[SavaOLED ERROR] " fmt "\n", ##__VA_ARGS__)
+    #define OLED_WARN(fmt, ...)  Serial.printf("[SavaOLED WARN] " fmt "\n", ##__VA_ARGS__)
+#else
+    #define OLED_LOG(...)
+    #define OLED_ERROR(...)
+    #define OLED_WARN(...)
+#endif
+
 
 
 struct savaFont {
@@ -364,6 +379,12 @@ public:
     */
     uint16_t getScopeCursor() const;
 
+    /**
+     * @brief Проверить готовность дисплея к работе
+     * @return true - дисплей инициализирован и готов, false - проблемы с I2C
+     */
+    bool isReady() const;
+
     //****************************************************************************************
     //--- Публичные функции управления дисплеем ---
     /**
@@ -484,7 +505,8 @@ private:
 
     bool _inverted;      								/**< @brief Состояние аппаратной инверсии экрана (true = inverted) */
     uint8_t _contrast;   								/**< @brief Текущее значение контраста (0..255) */
-	bool _Buffer;      									/**< @brief Флаг режима отправки буфера (true = целиком, false = постранично) */ 
+	bool _Buffer;      									/**< @brief Флаг режима отправки буфера (true = целиком, false = постранично) */
+	bool _initialized;   								/**< @brief Флаг успешной инициализации I2C и дисплея */ 
 
     std::unique_ptr<uint8_t[]> _vertBuffer;             //uint8_t* _vertBuffer; /**< @brief Вертикальный буфер (лента) */        
     uint16_t _vertBufferHeight;                         /**< @brief Текущая высота текста в буфере */
