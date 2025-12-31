@@ -1,6 +1,6 @@
-#ifndef SAVAFONT_FONT_PRO_8PX_H
-#define SAVAFONT_FONT_PRO_8PX_H
-const uint16_t SavaFont_font_Pro_8px_Offsets[] = {
+#ifndef SF_FONT_P8_H
+#define SF_FONT_P8_H
+const uint16_t SF_Font_P8_Offsets[] = {
     0  , 4  , 6  , 10 , 16 , 22 , 28 , 34 , 37 , 41 , 45 , 51 , 
     57 , 60 , 65 , 67 , 73 , 79 , 83 , 89 , 95 , 101, 107, 113, 
     119, 125, 131, 133, 136, 140, 145, 149, 155, 161, 167, 173, 
@@ -17,7 +17,7 @@ const uint16_t SavaFont_font_Pro_8px_Offsets[] = {
     887, 893, 901, 907, 913, 
 };
 
-const uint8_t SavaFont_font_Pro_8px_Data[] = {
+const uint8_t SF_Font_P8_Data[] = {
     0x03, 0x00, 0x00, 0x00, // ' ' (idx 0)
     0x01, 0x4F, // '!' (idx 1)
     0x03, 0x03, 0x00, 0x03, // '\"' (idx 2)
@@ -181,9 +181,9 @@ const uint8_t SavaFont_font_Pro_8px_Data[] = {
     0x05, 0x38, 0x55, 0x54, 0x55, 0x08, // 'ё' (idx 160)
 };
 
-const savaFont SavaFont_font_Pro_8px = { 
-    (const uint8_t*)SavaFont_font_Pro_8px_Data, 
-    (const uint16_t*)SavaFont_font_Pro_8px_Offsets,
+const savaFont SF_Font_P8 = {
+    (const uint8_t*)SF_Font_P8_Data,
+    (const uint16_t*)SF_Font_P8_Offsets,
     8, // Height
     1  // Type Index
 };
