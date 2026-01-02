@@ -1,3 +1,12 @@
+/*
+  SavaOLED_ESP32.cpp - Библиотека для управления OLED-дисплеями SSD1306 (128x64) через I2C на ESP32
+  Автор: Sava_LAB
+  Версия: 1.1.0
+  Дата: 2025-06-15
+    Описание:
+        Эта библиотека предназначена для работы с высокоскоростной графикой на дисплеях SSD1306 (128x64) с использованием интерфейса I2C ESP32.
+        Она использует полный буфер кадров для обновления без мерцания и оптимизирована для повышения производительности.           
+*/
 #include "SavaOLED_ESP32.h"
 
 //****************************************************************************************
@@ -210,14 +219,14 @@ void SavaOLED_ESP32::charSpacing(uint8_t spacing) {
 
 void SavaOLED_ESP32::scrollSpeed(uint8_t speed, bool loop) {
     if (speed < 1) speed = 1;
-    if (speed > 10) speed = 10;
+    if (speed > 15) speed = 15;
     _scrollSpeed = speed;
     _scrollLoop = loop;
 }
 
 void SavaOLED_ESP32::scrollSpeedVert(uint8_t speed) {
     if (speed < 1) speed = 1;
-    if (speed > 10) speed = 10;
+    if (speed > 15) speed = 15;
     _vertScrollSpeed = speed;
 }
 
@@ -379,9 +388,6 @@ void SavaOLED_ESP32::print(int16_t value, uint8_t min_digits) { print((int32_t)v
 void SavaOLED_ESP32::print(uint8_t value, uint8_t min_digits) { print((uint32_t)value, min_digits); }
 void SavaOLED_ESP32::print(uint16_t value, uint8_t min_digits) { print((uint32_t)value, min_digits); }
 
-/*void SavaOLED_ESP32::print(float value, uint8_t decimalPlaces) {char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); print(buffer); }
-void SavaOLED_ESP32::print(double value, uint8_t decimalPlaces) { char buffer[32] = { 0 }; dtostrf(value, 1, decimalPlaces, buffer); print(buffer); }*/
-
 void SavaOLED_ESP32::print(double value, uint8_t decimalPlaces, uint8_t min_width) {
     char buffer[32] = {0};
     char format[12] = {0};
@@ -515,10 +521,14 @@ void SavaOLED_ESP32::drawPrint() {
     bool scrolling = _scrollEnabled && (_cursorAlign == StrScroll);// || (_cursorAlign == StrLeft && _currentLineWidth > region_width));
 
     if (scrolling) {
-        if (_cursorY != _scrollingLineY) { _scrollOffset = 0; _scrollingLineY = _cursorY; }
+        if (_cursorY != _scrollingLineY) { _scrollOffset = 0; _scrollingLineY = _cursorY; _lastScrollTime = millis(); }
         unsigned long currentTime = millis();
         uint16_t scroll_delay = 1000 / (_scrollSpeed * 10);
-        if (currentTime - _lastScrollTime > scroll_delay) { _lastScrollTime = currentTime; _scrollOffset++; }
+        if (currentTime - _lastScrollTime > scroll_delay) {
+            uint16_t steps = (currentTime - _lastScrollTime) / scroll_delay;
+            _lastScrollTime = currentTime;
+            _scrollOffset += steps;
+        }
         if (loop_width == 0) source_offset = 0;
         else source_offset = (uint16_t)(_scrollOffset % (uint32_t)loop_width); 
     } else {
@@ -694,7 +704,7 @@ void SavaOLED_ESP32::drawPrintVert() {
     // --- ОПРЕДЕЛЕНИЕ ОКНА ОТРИСОВКИ ---
     int16_t win_top = _cursorY;
     int16_t win_bottom = _height;
-    // Если _cursorX2 задан как нижняя граница по Y (костыль — лучше завести _cursorY2)
+    // Если _cursorX2 задан как нижняя граница по Y 
     if (_cursorX2 > _cursorY && _cursorX2 <= _height) {
         win_bottom = _cursorX2;
     }
@@ -708,11 +718,12 @@ void SavaOLED_ESP32::drawPrintVert() {
         unsigned long currentTime = millis();
         // Используем _vertScrollSpeed
         uint16_t scroll_delay = 1000 / (_vertScrollSpeed * 10);
-        
+
         // Используем _vertLastScrollTime и _vertScrollOffset
-        if (currentTime - _vertLastScrollTime > scroll_delay) { 
-            _vertLastScrollTime = currentTime; 
-            _vertScrollOffset++; 
+        if (currentTime - _vertLastScrollTime > scroll_delay) {
+            uint16_t steps = (currentTime - _vertLastScrollTime) / scroll_delay;
+            _vertLastScrollTime = currentTime;
+            _vertScrollOffset += steps;
         }
         uint32_t loop_length = total_pixel_height + gap;
         // Используем _vertScrollOffset для расчета смещения
@@ -953,7 +964,7 @@ void SavaOLED_ESP32::circle(int16_t x0, int16_t y0, int16_t r, uint8_t mode, boo
         }
 
     } else {
-        // --- ВАШ 100% РАБОЧИЙ КОД ДЛЯ КОНТУРА. СКОПИРОВАН БЕЗ ИЗМЕНЕНИЙ. ---
+        // --- Обычный алгоритм отрисовки контура круга ---
         int16_t f = 1 - r;
         int16_t ddF_x = 1;
         int16_t ddF_y = -2 * r;
@@ -1025,13 +1036,9 @@ void SavaOLED_ESP32::rectR(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r
     }
 
     if (fill) {
-        // --- НОВЫЙ АЛГОРИТМ ЗАЛИВКИ ИЗ ТРЕХ ЧАСТЕЙ ---
 
         // Часть 1: Заливаем центральный прямоугольник
         rect(x, y + r, w, h - 2 * r, mode, true);
-
-        // Часть 2 и 3: Заливаем верхнюю и нижнюю "шапки"
-        // Для этого используем надежный двухпроходный алгоритм из fillCircle
 
         // --- Проход 1: Вычисление идеальных ширин для дуг ---
         uint8_t half_widths[r + 1];
@@ -1329,7 +1336,6 @@ void SavaOLED_ESP32::_drawQuarterCircle(int16_t x0, int16_t y0, int16_t r, uint8
             if (corner == 1) _drawPixel(x0 - y, y0 - x, mode); // Верхний левый
         }
         
-        // Внутренняя логика "черного ящика" остается НЕИЗМЕННОЙ
         if (f >= 0) {
             y--;
             ddF_y += 2;

@@ -1,3 +1,8 @@
+/*
+v1.1.0 SavaLAB 2025
+*/
+
+
 #ifndef SavaOLED_ESP32_h
 #define SavaOLED_ESP32_h
 
@@ -243,14 +248,14 @@ public:
 	
 	/**
     * @brief Установить скорость и режим скроллинга.
-    * @param speed - скорость от 1 (медленно) до 10 (быстро).
+    * @param speed - скорость от 1 (медленно) до 15 (быстро).
     * @param loop - true = зациклить, false = проиграть один раз.
     */
     void scrollSpeed(uint8_t speed = 3, bool loop = true);
 
     /**
     * @brief Установить скорость вертикального скроллинга.
-    * @param speed - скорость от 1 до 10.
+    * @param speed - скорость от 1 до 15.
     */
     void scrollSpeedVert(uint8_t speed = 3);
 
