@@ -152,10 +152,11 @@ void charSpacing(uint8_t spacing);
 Включает или выключает режим прокрутки для текста, напечатанного с выравниванием `StrScroll`.
 
 ```cpp
-void scroll(bool enabled);
+void scroll(bool enabled, bool scrollReset = false);
 ```
 
 * **`enabled`**: `true` — включить, `false` — выключить.
+* **`scrollReset`** `false` - работает, `true` обнулить координату **`X`** для скроллинга (Надпись будет находится в начальном положении)
 
 ### `scrollSpeed`
 

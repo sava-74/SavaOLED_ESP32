@@ -1,8 +1,8 @@
 /*
   SavaOLED_ESP32.cpp - Библиотека для управления OLED-дисплеями SSD1306 (128x64) через I2C на ESP32
   Автор: Sava_LAB
-  Версия: 1.1.0
-  Дата: 2025-06-15
+  Версия: 1.1.1
+  Дата: 2026
     Описание:
         Эта библиотека предназначена для работы с высокоскоростной графикой на дисплеях SSD1306 (128x64) с использованием интерфейса I2C ESP32.
         Она использует полный буфер кадров для обновления без мерцания и оптимизирована для повышения производительности.           
@@ -65,6 +65,7 @@ SavaOLED_ESP32::SavaOLED_ESP32(uint8_t width, uint8_t height, i2c_port_t port) {
 	_cursorAlign = StrLeft;
     _cursorX2 = -1;
 	_scrollEnabled = false;
+    _scrollReset = false;
     _scrollSpeed = 3;
     _scrollLoop = true;
     _scrollOffset = 0;
@@ -230,8 +231,9 @@ void SavaOLED_ESP32::scrollSpeedVert(uint8_t speed) {
     _vertScrollSpeed = speed;
 }
 
-void SavaOLED_ESP32::scroll(bool enabled) {
+void SavaOLED_ESP32::scroll(bool enabled, bool scrollReset) {
     _scrollEnabled = enabled;
+    _scrollReset = scrollReset;
 }
 
 void SavaOLED_ESP32::setBuffer(bool enabled) { 
@@ -521,7 +523,7 @@ void SavaOLED_ESP32::drawPrint() {
     bool scrolling = _scrollEnabled && (_cursorAlign == StrScroll);// || (_cursorAlign == StrLeft && _currentLineWidth > region_width));
 
     if (scrolling) {
-        if (_cursorY != _scrollingLineY) { _scrollOffset = 0; _scrollingLineY = _cursorY; _lastScrollTime = millis(); }
+        if ((_cursorY != _scrollingLineY) || _scrollReset) { _scrollOffset = 0; _scrollingLineY = _cursorY; _lastScrollTime = millis(); }
         unsigned long currentTime = millis();
         uint16_t scroll_delay = 1000 / (_scrollSpeed * 10);
         if (currentTime - _lastScrollTime > scroll_delay) {

@@ -1,5 +1,5 @@
 /*
-v1.1.0 SavaLAB 2025
+v1.1.1 SavaLAB 2026
 */
 
 
@@ -243,8 +243,9 @@ public:
 	/**
     * @brief Включить/выключить режим скроллинга для текущей строки.
     * @param enabled - true = включить, false = выключить.
+    * @param scrollReset - сбросить счетчики скроллинга (по умолчанию false).
     */
-	void scroll(bool enabled);
+	void scroll(bool enabled, bool scrollReset = false);
 	
 	/**
     * @brief Установить скорость и режим скроллинга.
@@ -476,7 +477,8 @@ private:
 	uint8_t _cursorAlign; 								/**< @brief Режим выравнивания курсора (StrLeft/StrCenter/StrRight/StrScroll) */	
 	int16_t _cursorX2;    								/**< @brief Правая граница диапазона X для выравнивания (или -1) */
     bool _scrollEnabled;        						/**< @brief Флаг включенного скроллинга для текущей строки */
-	uint8_t _scrollSpeed;       						/**< @brief Скорость скроллинга (1..10) */
+	bool _scrollReset;									/**< @brief Сброс счетчиков скроллинга*/
+    uint8_t _scrollSpeed;       						/**< @brief Скорость скроллинга (1..10) */
     bool _scrollLoop;           						/**< @brief Флаг зацикливания скролла */
     uint32_t _scrollOffset;     						/**< @brief Текущее смещение скролла (натуральное число, инкрементируется со временем) */
     unsigned long _lastScrollTime; 						/**< @brief Время (millis) последнего шага скролла */
